@@ -2,6 +2,7 @@
 
 import { signUpWithOAuth } from "@/utils/supabase";
 import { useMutation } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 
@@ -15,9 +16,11 @@ export default function SignUpPage() {
   return (
     <>
       <div className="grid justify-items-center gap-2">
-        <img
+        <Image
           src="https://api.dynt.ai/static/logo-192.png"
           alt="Dynt"
+          width={80}
+          height={80}
           className="w-20 rounded-lg"
         />
         <h3 className="sm:text-2xl text-2xl text-center font-bold ">

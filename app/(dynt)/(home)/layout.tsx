@@ -17,15 +17,11 @@ export default function HomeLayout({
   const router = useRouter();
 
   useEffect(() => {
-    console.log(session, "@@@ ");
-
     if (!session) {
       // if (publicRoutes.includes(pathname)) return;
       router.push("/login");
       console.log("No Session!!!!!!");
     }
-
-    console.log(user, organization, session, userId, "@@@@@@");
 
     // if (!userId) {
     //   router.push("/register/personal-details");

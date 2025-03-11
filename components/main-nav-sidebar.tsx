@@ -19,34 +19,18 @@ import {
   UserIcon,
   Users,
 } from "lucide-react";
-// import { useTheme } from "next-themes";
-import { useUser } from "@/context/UserContext";
+
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { OnboardingChecklist } from "./onboarding-checklist";
-import { SettingsSidebar } from "./settings-sidebar";
+import { OrganizationSelector } from "./sidebar-org-selector";
 
 export function MainNavSidebar() {
-  const router = useRouter();
-
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  //   const pathname = usePathname();
-  //   const { theme, setTheme } = useTheme();
 
-  //   const toggleTheme = () => {
-  //     setTheme(theme === "dark" ? "light" : "dark");
-  //   };
-
-  const { user } = useUser();
-
-  return showSettings ? (
-    <>
-      <p>Settings sidebar</p>
-      <SettingsSidebar onClose={() => setShowSettings(false)} />
-    </>
-  ) : (
+  return (
     <>
       <div
         className={cn(
@@ -54,15 +38,17 @@ export function MainNavSidebar() {
           isCollapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex py-4 items-center border-b border-border">
+        <div className="flex flex-col py-4 items-center border-b border-border">
           <div className="flex flex-col w-full">
             {/* Logo and app name */}
             <div className="flex justify-between w-full px-2">
               <Link href="/" className="flex items-center gap-2 font-bold">
                 <div className="p-1 rounded-lg backdrop-blur-sm">
-                  <img
+                  <Image
                     src="https://api.dynt.ai/static/logo-192.png"
                     alt="Dynt"
+                    width={32}
+                    height={32}
                     className="w-8 rounded"
                   />
                 </div>
@@ -79,17 +65,17 @@ export function MainNavSidebar() {
               </Button>
             </div>
 
+            {/* Organization Selector */}
+            {!isCollapsed && <OrganizationSelector />}
+
             {/* User info - below logo and name */}
-            {!isCollapsed && user && (
+            {/* {!isCollapsed && user && organization && (
               <div className="mt-1 ml-2 px-2">
-                <span className="text-xs font-medium block truncate">
-                  {user.name}
-                </span>
                 <span className="text-xs text-muted-foreground block truncate">
                   {user.email}
                 </span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -204,7 +190,6 @@ export function MainNavSidebar() {
               icon={Settings}
               label="Settings"
               isCollapsed={isCollapsed}
-              // onClick={() => setShowSettings(true)}
             />
           </div>
           <div className="border-t border-border mt-auto pt-2" />
@@ -222,7 +207,7 @@ function NavItem({
   badgeCount,
 }: {
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   isCollapsed: boolean;
   badgeCount?: number;
