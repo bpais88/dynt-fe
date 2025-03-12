@@ -4,7 +4,7 @@ import { InvoicesBillsList } from "@/components/invoices-bills-list";
 
 import { useOrganization } from "@/context/OrganizationContext";
 import { api, RouterInputs } from "@/utils/trpc";
-import { endOfDay, startOfYear, subYears } from "date-fns";
+import { endOfYear, startOfYear, subYears } from "date-fns";
 
 import { useState } from "react";
 
@@ -22,7 +22,7 @@ export default function InvoicesBillsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [period, setPeriod] = useState({
     startDate: startOfYear(subYears(new Date(), 2)),
-    endDate: endOfDay(new Date()),
+    endDate: endOfYear(new Date()),
   });
 
   const params = { organizationId, currentPage, filters, sorting, period };
