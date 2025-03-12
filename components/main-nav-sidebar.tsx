@@ -112,15 +112,9 @@ export function MainNavSidebar() {
               Finances
             </div>
             <NavItem
-              href="/transactions"
-              icon={FileText}
-              label="Transactions"
-              isCollapsed={isCollapsed}
-            />
-            <NavItem
-              href="/expenses"
-              icon={DollarSign}
-              label="Expenses"
+              href="/accounts"
+              icon={CreditCard}
+              label="Accounts"
               isCollapsed={isCollapsed}
             />
             <NavItem
@@ -131,9 +125,15 @@ export function MainNavSidebar() {
               // onClick={() => router.push("/invoices-bills")}
             />
             <NavItem
-              href="/accounts"
-              icon={CreditCard}
-              label="Accounts"
+              href="/transactions"
+              icon={FileText}
+              label="Transactions"
+              isCollapsed={isCollapsed}
+            />
+            <NavItem
+              href="/expenses"
+              icon={DollarSign}
+              label="Expenses"
               isCollapsed={isCollapsed}
             />
           </div>
