@@ -47,3 +47,13 @@ export const formatTime = (seconds: number): string => {
   const duration = intervalToDuration({ start: 0, end: seconds * 1000 });
   return `${duration.hours}h${duration.minutes}`;
 };
+
+export const saveFile = async (file: Blob, name: string) => {
+  const fileURL = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = fileURL;
+  link.setAttribute("download", name);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
