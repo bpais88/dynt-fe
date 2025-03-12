@@ -2,6 +2,7 @@
 
 import { loginWithOAuth } from "@/utils/supabase";
 import { useMutation } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 
@@ -17,10 +18,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
         {/* Logo and Heading */}
         <div className="flex flex-col items-center gap-3">
-          <img
+          <Image
             src="https://api.dynt.ai/static/logo-192.png"
             alt="Dynt"
-            className="w-16 rounded-lg"
+            width={32}
+            height={32}
+            className="w-14 rounded"
           />
           <h3 className="text-2xl font-bold text-gray-900">
             Sign in to Dynt.ai

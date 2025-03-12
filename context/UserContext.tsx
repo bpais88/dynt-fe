@@ -72,10 +72,9 @@ const UserContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
     return () => {
       authListener.data?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [userId, utils.users.userById]);
 
   const logout = async () => {
-    console.log("LOGOUT------------------------------------------------");
     if (DEMO_SESSION) return;
     await supabase.auth.signOut();
     router.push("/login");
@@ -132,10 +131,7 @@ const UserContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
     );
   }
 
-  console.log(session);
-  console.log(userId);
-  console.log("@@@@@@@@@@@@@@@@@@@@@@@@UserContext");
-  console.log(user);
+  console.log(user, "@@@@@@@@@@@@@@@@@@@@@@@@UserContext");
 
   return (
     <LocalStateProvider
@@ -154,7 +150,6 @@ const UserContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 const useUser = <S extends boolean>() => {
   const context = useContext<Props<S>>(LocalStateContext);
-  console.log(context, "useUser*************************");
   return context;
 };
 

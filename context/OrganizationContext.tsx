@@ -37,15 +37,13 @@ const OrganizationContextProvider: FC<{ children: ReactNode }> = ({
   const { userId } = useUser<true>();
   const [loading, setLoading] = useState(true);
 
-  console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$");
-
   const {
     data: organizations = [],
     isLoading,
     refetch,
   } = api.organizations.myOrganizations.useQuery(userId, { enabled: !!userId });
 
-  console.log(organizations);
+  console.log(organizations, "organizations");
 
   const handleOrganization = useCallback(() => {
     if (!organizations.length) return setOrganization(null);

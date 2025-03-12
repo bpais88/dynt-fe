@@ -4,7 +4,7 @@ import { useOrganization } from "@/context/OrganizationContext";
 
 import { CashFlow } from "@/components/cash-flow";
 import { CalendarDateRangePicker } from "@/components/date-range-picker";
-import { InvoicesBills } from "@/components/invoices-bills";
+import { InvoicesBillsList } from "@/components/invoices-bills-list";
 import { MainNavSidebar } from "@/components/main-nav-sidebar";
 import { Overview } from "@/components/overview-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,7 @@ export default function Home() {
     endDate: endOfDay(new Date()),
   });
 
-  // Fetch Data from the API
+  // api fetch data
   const { data: dashboardMetrics, isLoading } = api.reports.analytics.useQuery(
     { organizationId, ...period, isToday: isToday(period.endDate) },
     { enabled: !!organizationId }
@@ -80,15 +80,7 @@ export default function Home() {
   const invoices = dashboardMetrics.invoices;
 
   console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  console.log(
-    organizationId,
-    organization,
-    isLoading,
-    accounts,
-    chartData,
-    chartLoading,
-    dashboardMetrics
-  );
+  console.log(isLoading, accounts, chartData, chartLoading, dashboardMetrics);
 
   return (
     <>
@@ -185,7 +177,7 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <InvoicesBills bills={bills} invoices={invoices} />
+                <InvoicesBillsList bills={bills} invoices={invoices} />
               </CardContent>
             </Card>
           </div>
