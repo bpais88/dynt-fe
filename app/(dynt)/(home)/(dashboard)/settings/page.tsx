@@ -35,6 +35,8 @@ export default function SettingsPage() {
     return value || "Not provided";
   };
 
+  if (!user) return <></>;
+
   console.log("++++", user, organization);
 
   return (
@@ -89,7 +91,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col items-center md:items-start gap-3">
                   <Avatar className="h-24 w-24 text-2xl bg-gray-200 font-semibold  text-black">
                     <AvatarFallback>
-                      {getInitialsFromName(user.name)}
+                      {getInitialsFromName(user?.name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-center md:text-left">
