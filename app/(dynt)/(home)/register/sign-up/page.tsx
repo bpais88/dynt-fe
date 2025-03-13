@@ -1,45 +1,57 @@
 "use client";
 
-import { signUpWithOAuth } from "@/utils/supabase";
+import { loginWithOAuth } from "@/utils/supabase";
 import { useMutation } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 
 export default function SignUpPage() {
-  const OAuth = useMutation(signUpWithOAuth);
+  const OAuth = useMutation(loginWithOAuth);
 
   const handleOAuth = async () => {
     await OAuth.mutateAsync("google");
   };
 
   return (
-    <>
-      <div className="grid justify-items-center gap-2">
-        <Image
-          src="https://api.dynt.ai/static/logo-192.png"
-          alt="Dynt"
-          width={80}
-          height={80}
-          className="w-20 rounded-lg"
-        />
-        <h3 className="sm:text-2xl text-2xl text-center font-bold ">
-          Create your Dynt.ai account
-        </h3>
-        <p className="sm:text-xs text-sm text-center">
-          Get started for free. No credit card required.
-        </p>
-      </div>
-      <button onClick={handleOAuth} className="btn w-full btn-neutral my-4">
-        <FcGoogle size={30} />
-      </button>
+    <div className="flex items-center justify-center min-h-screen p-6 bg-gray-100 w-full">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+        {/* Logo and Heading */}
+        <div className="flex flex-col items-center gap-3">
+          <Image
+            src="https://api.dynt.ai/static/logo-192.png"
+            alt="Dynt"
+            width={32}
+            height={32}
+            className="w-14 rounded"
+          />
+          <h3 className="text-2xl font-bold text-gray-900">
+            Create your Dynt.ai account
+          </h3>
+          <p className="text-sm text-gray-600 text-center">
+            Start managing your finances with Dynt.ai
+          </p>
+        </div>
 
-      <div className="flex items-center text-sm gap-2">
-        <p>Already have an account?</p>
-        <Link className="link link-primary text-sm" href={"/login"}>
-          Sign in
-        </Link>
+        {/* Sign-up Button */}
+        <button
+          onClick={handleOAuth}
+          className="w-full flex items-center justify-center cursor-pointer gap-2 mt-6 p-3 text-white bg-neutral-800 rounded-lg hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-500 transition-all"
+        >
+          <FcGoogle size={24} />
+          <span className="font-medium">Sign Up With Google</span>
+        </button>
+
+        {/* Links Section */}
+        <div className="flex flex-col items-center text-sm mt-6">
+          <p>
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
