@@ -25,40 +25,99 @@ export function InvoicesBillsList({
       </TabsList>
 
       <TabsContent value="all">
-        <div className="space-y-8">
-          {[...bills, ...invoices]
-            .sort(
-              (a, b) =>
-                new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-            )
-            .map((entry) => FinancialItem(entry))}
-        </div>
+        {bills?.length > 0 || invoices?.length > 0 ? (
+          <div className="space-y-8">
+            {[...bills, ...invoices]
+              .sort(
+                (a, b) =>
+                  new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+              )
+              .map((entry) => FinancialItem(entry))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <FinancialSheetLogo />
+            <h3 className="text-lg font-medium text-gray-900">
+              No items to display
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You don&apos;t have any bills or invoices yet.
+            </p>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="invoices">
-        <div className="space-y-8">
-          {invoices
-            .sort(
-              (a, b) =>
-                new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-            )
-            .map((invoice) => FinancialItem(invoice))}
-        </div>
+        {invoices?.length > 0 ? (
+          <div className="space-y-8">
+            {invoices
+              .sort(
+                (a, b) =>
+                  new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+              )
+              .map((invoice) => FinancialItem(invoice))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <FinancialSheetLogo />
+            <h3 className="text-lg font-medium text-gray-900">
+              No items to display
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You don&apos;t have any invoices yet.
+            </p>
+          </div>
+        )}
       </TabsContent>
 
       <TabsContent value="bills">
-        <div className="space-y-8">
-          {bills
-            .sort(
-              (a, b) =>
-                new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-            )
-            .map((bill) => FinancialItem(bill))}
-        </div>
+        {bills?.length > 0 ? (
+          <div className="space-y-8">
+            {bills
+              .sort(
+                (a, b) =>
+                  new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+              )
+              .map((bill) => FinancialItem(bill))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <FinancialSheetLogo />
+            <h3 className="text-lg font-medium text-gray-900">
+              No items to display
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You don&apos;t have any bills yet.
+            </p>
+          </div>
+        )}
       </TabsContent>
     </Tabs>
   );
 }
+
+const FinancialSheetLogo = () => {
+  return (
+    <div className="rounded-full bg-gray-100 p-3 mb-4">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-gray-500"
+      >
+        <rect width="18" height="18" x="3" y="3" rx="2" />
+        <path d="M3 9h18" />
+        <path d="M9 21V9" />
+      </svg>
+    </div>
+  );
+};
 
 function FinancialItem(entry: InvoiceType | BillType) {
   const isBill = "vendor" in entry;

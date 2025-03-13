@@ -77,43 +77,8 @@ export default function InvoiceDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-16">
-        <div className="my-auto">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="40"
-            height="40"
-            viewBox="0 0 50 50"
-          >
-            <circle
-              cx="25"
-              cy="25"
-              r="20"
-              fill="none"
-              stroke="#cccccc"
-              strokeWidth="4"
-            />
-            <circle
-              cx="25"
-              cy="25"
-              r="20"
-              fill="none"
-              stroke="#888888"
-              strokeWidth="4"
-              strokeDasharray="60 120"
-            >
-              <animateTransform
-                attributeName="transform"
-                attributeType="XML"
-                type="rotate"
-                from="0 25 25"
-                to="360 25 25"
-                dur="1.2s"
-                repeatCount="indefinite"
-              />
-            </circle>
-          </svg>
-        </div>
+      <div className="flex py-8 pt-36">
+        <div className="animate-spin rounded-full h-8 w-8  m-auto border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
