@@ -28,13 +28,15 @@ export default function InvoicesBillsPage() {
   const params = { organizationId, currentPage, filters, sorting, period };
 
   // api fetch data
-  const { data: invoices = [] } = api.invoices.invoices.useQuery(params, {
-    enabled: !!organizationId,
-  });
+  const { data: invoices = [], isLoading: isLoadingInvoices } =
+    api.invoices.invoices.useQuery(params, {
+      enabled: !!organizationId,
+    });
 
-  const { data: bills = [] } = api.bills.bills.useQuery(params, {
-    enabled: !!organizationId,
-  });
+  const { data: bills = [], isLoading: isLoadingBills } =
+    api.bills.bills.useQuery(params, {
+      enabled: !!organizationId,
+    });
 
   console.log("+++++++++++++++++++++");
   console.log(invoices, bills, organizationId, params);
@@ -43,7 +45,13 @@ export default function InvoicesBillsPage() {
     <>
       <div className="px-20 py-12">
         <h2 className="text-2xl font-bold">Invoices & Bills</h2>
-        <InvoicesBillsList invoices={invoices} bills={bills} />
+        {isLoadingInvoices || isLoadingBills ? (
+          <div className="flex py-8 pt-36">
+            <div className="animate-spin rounded-full h-8 w-8  m-auto border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <InvoicesBillsList invoices={invoices} bills={bills} />
+        )}
       </div>
     </>
   );
