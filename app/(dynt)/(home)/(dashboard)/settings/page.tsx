@@ -16,12 +16,12 @@ import {
 import { useState } from "react";
 
 export default function SettingsPage() {
-  const { logout, user } = useUser<true>();
+  const { user, logout } = useUser<true>();
   const { organization } = useOrganization();
 
   const [activeTab, setActiveTab] = useState("profile");
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: Date) => {
     if (!dateString) return "Not provided";
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
@@ -35,7 +35,11 @@ export default function SettingsPage() {
     return value || "Not provided";
   };
 
-  if (!user) return <></>;
+  // TODO: redirect to login?
+  if (!user)
+    return (
+      <p className="text-red-500 text-center">Error: User data not available</p>
+    );
 
   console.log("++++", user, organization);
 
@@ -127,7 +131,7 @@ export default function SettingsPage() {
                     </p>
                     <p className="font-medium">
                       {user?.dateOfBirth
-                        ? formatDate(user.dateOfBirth)
+                        ? formatDate(user?.dateOfBirth)
                         : "Not provided"}
                     </p>
                   </div>
@@ -498,7 +502,8 @@ export default function SettingsPage() {
 }
 
 function getInitialsFromName(name: string) {
-  const parts = name?.trim().split(" ") || ["?"];
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
   return parts.length > 1
     ? (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
     : parts[0].charAt(0).toUpperCase();
