@@ -16,6 +16,15 @@ export function InvoicesBillsList({
   bills: BillType[] | [];
   invoices: InvoiceType[] | [];
 }) {
+  const pathname = usePathname();
+  const isInvoicesBillsPage = pathname === "/invoices-bills";
+
+  const combinedEntries = [...bills, ...invoices]
+    .sort(
+      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+    )
+    .slice(0, isInvoicesBillsPage ? undefined : 5); // Limit to 5 if not on invoices-bills page
+
   return (
     <Tabs defaultValue="all">
       <TabsList className="mb-4 mt-2">
@@ -25,14 +34,9 @@ export function InvoicesBillsList({
       </TabsList>
 
       <TabsContent value="all">
-        {bills?.length > 0 || invoices?.length > 0 ? (
+        {combinedEntries.length > 0 ? (
           <div className="space-y-8">
-            {[...bills, ...invoices]
-              .sort(
-                (a, b) =>
-                  new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
-              )
-              .map((entry) => FinancialItem(entry))}
+            {combinedEntries.map((entry) => FinancialItem(entry))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
