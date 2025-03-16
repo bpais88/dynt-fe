@@ -76,6 +76,8 @@ export function OverviewCharts({
   }) => {
     if (!active || !payload || !payload.length) return null;
 
+    console.log(loading);
+
     return (
       <div className="custom-tooltip rounded-md shadow-lg p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">
