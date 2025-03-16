@@ -50,7 +50,7 @@ export function OverviewCharts({
     return monthlyBalances;
   }, [data]);
 
-  // fromat data
+  // Format data
   const formattedData = months.map((month) => ({
     month: month.name,
     name: month.name,
@@ -60,7 +60,46 @@ export function OverviewCharts({
     balance: balancesByMonth[month.value],
   }));
 
-  console.log(formattedData, "%%");
+  // Custom tooltip
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{
+      color: string;
+      name: string;
+      value: number;
+    }>;
+    label?: string;
+  }) => {
+    if (!active || !payload || !payload.length) return null;
+
+    return (
+      <div className="custom-tooltip rounded-md shadow-lg p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">
+          {label}
+        </p>
+        {payload.map((item, index) => (
+          <div key={index} className="flex items-center justify-between py-1">
+            <div className="flex items-center">
+              <div
+                className="w-3 h-3 mr-2 rounded-full"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-sm text-slate-600 dark:text-slate-300">
+                {item.name.charAt(0).toUpperCase() + item.name.slice(1)}:
+              </span>
+            </div>
+            <span className="text-sm font-medium text-slate-900 dark:text-white ml-2">
+              {formatCurrency(item.value, currency)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <Tabs defaultValue="cashflow">
@@ -85,16 +124,9 @@ export function OverviewCharts({
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
-            <Tooltip
-              contentStyle={{
-                background: "rgba(0, 0, 0, 0.8)",
-                border: "none",
-              }}
-              itemStyle={{ color: "#fff" }}
-              formatter={(value, name) => [`$${value}`, name]}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend
               formatter={(value) =>
                 value.charAt(0).toUpperCase() + value.slice(1)
@@ -129,15 +161,9 @@ export function OverviewCharts({
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
-            <Tooltip
-              contentStyle={{
-                background: "rgba(0, 0, 0, 0.8)",
-                border: "none",
-              }}
-              itemStyle={{ color: "#fff" }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend
               formatter={(value) =>
                 value.charAt(0).toUpperCase() + value.slice(1)
@@ -168,15 +194,9 @@ export function OverviewCharts({
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => formatCurrency(value, currency)}
             />
-            <Tooltip
-              contentStyle={{
-                background: "rgba(0, 0, 0, 0.8)",
-                border: "none",
-              }}
-              itemStyle={{ color: "#fff" }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend
               formatter={(value) =>
                 value.charAt(0).toUpperCase() + value.slice(1)
