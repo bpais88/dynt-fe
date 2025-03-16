@@ -14,101 +14,43 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useUser } from "@/context/UserContext";
 import { Check, Mail, MapPin, Phone, Upload, User } from "lucide-react";
-import { useState } from "react";
-
-// Mock data for countries
-const countries = [
-  { value: "us", label: "United States" },
-  { value: "ca", label: "Canada" },
-  { value: "uk", label: "United Kingdom" },
-  { value: "au", label: "Australia" },
-  { value: "de", label: "Germany" },
-  { value: "fr", label: "France" },
-  { value: "jp", label: "Japan" },
-  { value: "cn", label: "China" },
-  { value: "in", label: "India" },
-  { value: "br", label: "Brazil" },
-];
-
-// Mock data for states (US states as example)
-const states = [
-  { value: "al", label: "Alabama" },
-  { value: "ak", label: "Alaska" },
-  { value: "az", label: "Arizona" },
-  { value: "ar", label: "Arkansas" },
-  { value: "ca", label: "California" },
-  { value: "co", label: "Colorado" },
-  { value: "ct", label: "Connecticut" },
-  { value: "de", label: "Delaware" },
-  { value: "fl", label: "Florida" },
-  { value: "ga", label: "Georgia" },
-  { value: "hi", label: "Hawaii" },
-  { value: "id", label: "Idaho" },
-  { value: "il", label: "Illinois" },
-  { value: "in", label: "Indiana" },
-  { value: "ia", label: "Iowa" },
-  { value: "ks", label: "Kansas" },
-  { value: "ky", label: "Kentucky" },
-  { value: "la", label: "Louisiana" },
-  { value: "me", label: "Maine" },
-  { value: "md", label: "Maryland" },
-  { value: "ma", label: "Massachusetts" },
-  { value: "mi", label: "Michigan" },
-  { value: "mn", label: "Minnesota" },
-  { value: "ms", label: "Mississippi" },
-  { value: "mo", label: "Missouri" },
-  { value: "mt", label: "Montana" },
-  { value: "ne", label: "Nebraska" },
-  { value: "nv", label: "Nevada" },
-  { value: "nh", label: "New Hampshire" },
-  { value: "nj", label: "New Jersey" },
-  { value: "nm", label: "New Mexico" },
-  { value: "ny", label: "New York" },
-  { value: "nc", label: "North Carolina" },
-  { value: "nd", label: "North Dakota" },
-  { value: "oh", label: "Ohio" },
-  { value: "ok", label: "Oklahoma" },
-  { value: "or", label: "Oregon" },
-  { value: "pa", label: "Pennsylvania" },
-  { value: "ri", label: "Rhode Island" },
-  { value: "sc", label: "South Carolina" },
-  { value: "sd", label: "South Dakota" },
-  { value: "tn", label: "Tennessee" },
-  { value: "tx", label: "Texas" },
-  { value: "ut", label: "Utah" },
-  { value: "vt", label: "Vermont" },
-  { value: "va", label: "Virginia" },
-  { value: "wa", label: "Washington" },
-  { value: "wv", label: "West Virginia" },
-  { value: "wi", label: "Wisconsin" },
-  { value: "wy", label: "Wyoming" },
-];
+import { useEffect, useState } from "react";
 
 export function ProfileSettings() {
-  // State for form fields
-  const [profile, setProfile] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    phoneNumber: "+1 (555) 123-4567",
-    email: "john.doe@example.com",
-    address: "123 Main Street",
-    city: "San Francisco",
-    state: "ca",
-    postCode: "94105",
-    country: "us",
-  });
+  const { user } = useUser();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // const { toast } = useToast();
+
+  const [profile, setProfile] = useState({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    phoneNumber: user?.phone || "",
+    email: user?.email || "",
+    address: user?.address || "",
+    city: user?.city || "",
+    state: user?.state || "",
+    postCode: user?.postCode || "",
+    country: user?.countryId || "",
+  });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phoneNumber: user.phone || "",
+        email: user.email || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        postCode: user.postCode || "",
+        country: user.countryId || "",
+      });
+    }
+  }, [user]);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,25 +58,38 @@ export function ProfileSettings() {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle select changes
-  const handleSelectChange = (name: string, value: string) => {
-    setProfile((prev) => ({ ...prev, [name]: value }));
-  };
-
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Simulate API call for now
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setIsSaving(false);
       setIsEditing(false);
       // toast({
       //   title: "Profile updated",
       //   description: "Your profile information has been updated successfully.",
       // });
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      setIsSaving(false);
+      // toast({
+      //   title: "Update failed",
+      //   description: "There was a problem updating your profile.",
+      //   variant: "destructive",
+      // });
+    }
+  };
+
+  // Generate initials for avatar fallback
+  const getInitials = () => {
+    if (!user) return "";
+    const firstInitial = user.firstName ? user.firstName[0] : "";
+    const lastInitial = user.lastName ? user.lastName[0] : "";
+    return (firstInitial + lastInitial).toUpperCase();
   };
 
   return (
@@ -142,19 +97,28 @@ export function ProfileSettings() {
       <h2 className="text-2xl font-bold">Profile Settings</h2>
       <div className="flex items-center justify-between">
         {!isEditing ? (
-          <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+          <Button onClick={() => setIsEditing(true)} className="cursor-pointer">
+            Edit Profile
+          </Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              className="cursor-pointer"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSaving}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="cursor-pointer"
+            >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         )}
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Profile Picture</CardTitle>
@@ -165,10 +129,12 @@ export function ProfileSettings() {
         <CardContent className="flex items-center gap-6">
           <Avatar className="h-24 w-24">
             <AvatarImage
-              src="/placeholder.svg?height=96&width=96"
+              src={user?.photo || "/placeholder.svg?height=96&width=96"}
               alt="Profile"
             />
-            <AvatarFallback className="text-2xl">JD</AvatarFallback>
+            <AvatarFallback className="text-2xl">
+              {getInitials()}
+            </AvatarFallback>
           </Avatar>
           <div className="space-y-2">
             <Button variant="outline" disabled={!isEditing}>
@@ -181,7 +147,6 @@ export function ProfileSettings() {
           </div>
         </CardContent>
       </Card>
-
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
@@ -250,7 +215,6 @@ export function ProfileSettings() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -318,7 +282,6 @@ export function ProfileSettings() {
             </div>
           </CardContent>
         </Card>
-
         {isEditing && (
           <CardFooter className="flex justify-end border-t px-6 py-4">
             <Button type="submit" disabled={isSaving}>

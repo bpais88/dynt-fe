@@ -1,7 +1,4 @@
 "use client";
-
-import type React from "react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/context/OrganizationContext";
 import {
   Building,
   Check,
@@ -27,26 +24,75 @@ import {
   Phone,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 export function CompanySettings() {
-  // State for form fields
+  const { organization } = useOrganization();
+
   const [company, setCompany] = useState({
-    businessName: "Product Builders Academy",
-    vatNumber: "NL003594687B09",
-    registrationNumber: "344492990B01",
-    address: "Koeriestersplein 18",
-    email: "bruno.pais88@gmail.com",
-    city: "Amsterdam",
-    phone: "+31 64 1119538",
-    postalCode: "1011MR",
-    website: "https://dynt.ai",
+    businessName: "",
+    vatNumber: "",
+    registrationNumber: "",
+    address: "",
+    email: "",
+    city: "",
+    phone: "",
+    postalCode: "",
+    website: "",
     privacyPolicyUrl: "",
+    state: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // const { toast } = useToast();
+
+  useEffect(() => {
+    if (organization) {
+      setCompany({
+        businessName: organization.name || "",
+        vatNumber: organization.business_tax_number || "",
+        registrationNumber: organization.business_number || "",
+        address: organization.address || "",
+        email: organization.email || "",
+        city: organization.city || "",
+        phone: organization.phone ? formatPhoneNumber(organization.phone) : "",
+        postalCode: organization.postCode || "",
+        website: organization.website || "",
+        privacyPolicyUrl: organization.policyURL || "",
+        state: organization.state || "",
+      });
+    }
+  }, [organization]);
+
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return "";
+    if (phone.startsWith("+")) return phone;
+
+    if (/^\d+$/.test(phone)) {
+      if (phone.startsWith("31")) {
+        return `+${phone}`;
+      }
+      return `+${phone}`;
+    }
+
+    return phone;
+  };
+
+  const getOrganizationInitials = () => {
+    if (!organization || !organization.name) return "";
+
+    const words = organization.name.split(" ");
+    if (words.length === 1) {
+      return words[0].substring(0, 2).toUpperCase();
+    }
+
+    return words
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+  };
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,20 +100,29 @@ export function CompanySettings() {
     setCompany((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Simulate API call for now
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setIsSaving(false);
       setIsEditing(false);
       // toast({
       //   title: "Company information updated",
       //   description: "Your company information has been updated successfully.",
       // });
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to update company information:", error);
+      setIsSaving(false);
+      // toast({
+      //   title: "Update failed",
+      //   description: "There was a problem updating your company information.",
+      //   variant: "destructive",
+      // });
+    }
   };
 
   return (
@@ -75,19 +130,28 @@ export function CompanySettings() {
       <h2 className="text-2xl font-bold">Company Settings</h2>
       <div className="flex items-center justify-between">
         {!isEditing ? (
-          <Button onClick={() => setIsEditing(true)}>Edit Company Info</Button>
+          <Button onClick={() => setIsEditing(true)} className="cursor-pointer">
+            Edit Company Info
+          </Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              className="cursor-pointer"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSaving}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSaving}
+              className="cursor-pointer"
+            >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         )}
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Company Logo</CardTitle>
@@ -99,11 +163,11 @@ export function CompanySettings() {
         <CardContent className="flex items-center gap-6">
           <Avatar className="h-24 w-24">
             <AvatarImage
-              src="/placeholder.svg?height=96&width=96"
+              src={organization?.logo || "/placeholder.svg?height=96&width=96"}
               alt="Company Logo"
             />
             <AvatarFallback className="text-2xl bg-primary/10">
-              PBA
+              {getOrganizationInitials()}
             </AvatarFallback>
           </Avatar>
           <div className="space-y-2">
@@ -117,7 +181,6 @@ export function CompanySettings() {
           </div>
         </CardContent>
       </Card>
-
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
@@ -140,7 +203,6 @@ export function CompanySettings() {
                 disabled={!isEditing}
               />
             </div>
-
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="vatNumber" className="flex items-center gap-1">
@@ -172,7 +234,6 @@ export function CompanySettings() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="address" className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
@@ -186,7 +247,6 @@ export function CompanySettings() {
                 disabled={!isEditing}
               />
             </div>
-
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-1">
@@ -216,7 +276,6 @@ export function CompanySettings() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
               <Input
@@ -229,7 +288,6 @@ export function CompanySettings() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -243,17 +301,14 @@ export function CompanySettings() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="state">State/Province</Label>
                 <Input
-                  id="city"
-                  name="city"
-                  value={company.city}
+                  id="state"
+                  name="state"
+                  value={company.state}
                   onChange={handleChange}
                   disabled={!isEditing}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Note: This field is duplicated from above
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="postalCode">Postal Code</Label>
@@ -266,7 +321,6 @@ export function CompanySettings() {
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="website" className="flex items-center gap-1">
                 <Globe className="h-4 w-4" />
@@ -281,7 +335,6 @@ export function CompanySettings() {
                 disabled={!isEditing}
               />
             </div>
-
             <div className="space-y-2">
               <Label
                 htmlFor="privacyPolicyUrl"

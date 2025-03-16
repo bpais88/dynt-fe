@@ -27,6 +27,7 @@ export default function Home() {
     startDate: startOfYear(new Date()),
     endDate: endOfDay(new Date()),
   });
+  // TODO: should probably do like last 6 months here instead of just startOfYear
 
   // api fetch data
   const { data: dashboardMetrics, isLoading } = api.reports.analytics.useQuery(
