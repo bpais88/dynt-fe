@@ -5,8 +5,7 @@ import { useOrganization } from "@/context/OrganizationContext";
 import { CashFlow } from "@/components/cash-flow";
 import { CalendarDateRangePicker } from "@/components/date-range-picker";
 import { InvoicesBillsList } from "@/components/invoices-bills-list";
-import { MainNavSidebar } from "@/components/main-nav-sidebar";
-import { Overview } from "@/components/overview-chart";
+import { OverviewCharts } from "@/components/overview-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatTime } from "@/utils/helper";
@@ -20,13 +19,10 @@ import { useState } from "react";
 
 export default function Home() {
   const { organizationId, organization } = useOrganization<true>();
-
   const [accountId, setAccountId] = useState<string>();
 
   const pastThreeYears = [0, 1, 2].map((i) => new Date().getFullYear() - i);
-
   const [year, setYear] = useState(pastThreeYears[0]);
-
   const [period, setPeriod] = useState({
     startDate: startOfYear(new Date()),
     endDate: endOfDay(new Date()),
@@ -53,40 +49,19 @@ export default function Home() {
 
   // data fetch end
 
-  // const content: Record<Tab, ReactNode> = {
-  //   bills: <RecentBills {...{ bills: data.bills }} />,
-  //   invoices: <RecentInvoices {...{ invoices: data.invoices }} />,
-  // };
-
   const currency = organization?.defaultCurrency;
 
-  const handleSetYear = (y: number) => {
-    setYear(y);
-
-    const startDate = startOfYear(new Date().setFullYear(y));
-    const endDate = endOfYear(new Date().setFullYear(y));
-
-    setPeriod({
-      endDate: isBefore(endDate, new Date()) ? endDate : endOfDay(new Date()),
-      startDate: startOfDay(startDate),
-    });
-  };
-
   if (!dashboardMetrics) return <div></div>;
-
   // return <p>DashboardMetricsAnalytics loading failed!!!!</p>;
 
   const bills = dashboardMetrics.bills;
   const invoices = dashboardMetrics.invoices;
 
   console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  console.log(isLoading, accounts, chartData, chartLoading, dashboardMetrics);
+  console.log(isLoading, accounts, dashboardMetrics, chartLoading, chartData);
 
   return (
     <>
-      {/* <MainNavSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8"> */}
       <Tabs defaultValue="overview" className="space-y-4">
         <div className="flex justify-between items-center mb-4">
           <TabsList>
@@ -96,6 +71,7 @@ export default function Home() {
           <CalendarDateRangePicker />
         </div>
         <TabsContent value="overview" className="space-y-4">
+          {/* top dashboard/metrics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -160,16 +136,22 @@ export default function Home() {
             </Card>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            {/* Overview Charts */}
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle className="text-lg font-medium">
-                  Revenue Overview
-                </CardTitle>
+                <CardTitle className="text-lg font-medium">Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <Overview />
+                {chartData && (
+                  <OverviewCharts
+                    data={chartData}
+                    currency={currency}
+                    loading={chartLoading}
+                  />
+                )}
               </CardContent>
             </Card>
+            {/* Invoices And Bills */}
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle className="text-lg font-medium">
@@ -186,8 +168,6 @@ export default function Home() {
           <CashFlow />
         </TabsContent>
       </Tabs>
-      {/* </div>
-      </main> */}
     </>
   );
 }

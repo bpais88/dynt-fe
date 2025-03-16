@@ -1,51 +1,78 @@
-"use client";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/utils/helper";
+import { RouterOutputs } from "@/utils/trpc";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
-  Cell,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-// import { CardTitle, CardDescription } from "@/components/ui/card"
 
-const data = [
-  { name: "Jan", Actual: 4000, "AI Forecast": 4400 },
-  { name: "Feb", Actual: 3000, "AI Forecast": 3200 },
-  { name: "Mar", Actual: 2000, "AI Forecast": 2800 },
-  { name: "Apr", Actual: 2780, "AI Forecast": 3000 },
-  { name: "May", Actual: 1890, "AI Forecast": 2300 },
-  { name: "Jun", Actual: 2390, "AI Forecast": 2600 },
-];
+interface OverviewChartsProps {
+  data: RouterOutputs["reports"]["barChart"];
+  currency: string;
+  loading: boolean;
+}
 
-const pieData = [
-  { name: "Actual", value: 16060 },
-  { name: "AI Forecast", value: 18300 },
-];
+export function OverviewCharts({
+  data,
+  currency,
+  loading,
+}: OverviewChartsProps) {
+  const months = [
+    { name: "Jan", value: 0 },
+    { name: "Feb", value: 1 },
+    { name: "Mar", value: 2 },
+    { name: "Apr", value: 3 },
+    { name: "May", value: 4 },
+    { name: "Jun", value: 5 },
+    { name: "Jul", value: 6 },
+    { name: "Aug", value: 7 },
+    { name: "Sep", value: 8 },
+    { name: "Oct", value: 9 },
+    { name: "Nov", value: 10 },
+    { name: "Dec", value: 11 },
+  ];
 
-const COLORS = ["#0088FE", "#00C49F"];
+  const balancesByMonth = useMemo(() => {
+    const monthlyBalances = new Array(12).fill(0);
+    data.balances.forEach(([date, balance]) => {
+      const month = new Date(date).getMonth();
+      monthlyBalances[month] = balance;
+    });
+    return monthlyBalances;
+  }, [data]);
 
-export function Overview() {
+  // fromat data
+  const formattedData = months.map((month) => ({
+    month: month.name,
+    name: month.name,
+    debit: data.cashFlow.debits[month.value] || 0,
+    credit: data.cashFlow.credits[month.value] || 0,
+    spending: data.cashFlow.debits[month.value] || 0,
+    balance: balancesByMonth[month.value],
+  }));
+
+  console.log(formattedData, "%%");
+
   return (
-    <Tabs defaultValue="bar">
-      {/* <CardTitle>Revenue Overview</CardTitle>
-      <CardDescription>Actual vs AI Forecast</CardDescription> */}
+    <Tabs defaultValue="cashflow">
       <TabsList className="mb-4 mt-2">
-        <TabsTrigger value="bar">Bar Chart</TabsTrigger>
-        <TabsTrigger value="line">Line Chart</TabsTrigger>
-        <TabsTrigger value="pie">Pie Chart</TabsTrigger>
+        <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+        <TabsTrigger value="balance">Balance</TabsTrigger>
+        <TabsTrigger value="spending">Spending</TabsTrigger>
       </TabsList>
-      <TabsContent value="bar">
+      {/* CashFlow Chart */}
+      <TabsContent value="cashflow">
         <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={data}>
+          <BarChart data={formattedData}>
             <XAxis
               dataKey="name"
               stroke="#888888"
@@ -66,24 +93,30 @@ export function Overview() {
                 border: "none",
               }}
               itemStyle={{ color: "#fff" }}
+              formatter={(value, name) => [`$${value}`, name]}
             />
-            <Legend />
+            <Legend
+              formatter={(value) =>
+                value.charAt(0).toUpperCase() + value.slice(1)
+              }
+            />
             <Bar
-              dataKey="Actual"
-              fill="rgba(0, 146, 255, 0.7)"
+              dataKey="debit"
+              fill="rgba(239, 68, 68, 0.7)"
               radius={[4, 4, 0, 0]}
             />
             <Bar
-              dataKey="AI Forecast"
-              fill="rgba(172, 127, 244, 0.7)"
+              dataKey="credit"
+              fill="rgba(34, 197, 94, 0.7)"
               radius={[4, 4, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>
       </TabsContent>
-      <TabsContent value="line">
+      {/* Balance Chart */}
+      <TabsContent value="balance">
         <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={data}>
+          <LineChart data={formattedData}>
             <XAxis
               dataKey="name"
               stroke="#888888"
@@ -105,44 +138,38 @@ export function Overview() {
               }}
               itemStyle={{ color: "#fff" }}
             />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="Actual"
-              stroke="rgba(0, 146, 255, 0.7)"
-              strokeWidth={2}
+            <Legend
+              formatter={(value) =>
+                value.charAt(0).toUpperCase() + value.slice(1)
+              }
             />
             <Line
               type="monotone"
-              dataKey="AI Forecast"
-              stroke="rgba(172, 127, 244, 0.7)"
+              dataKey="balance"
+              stroke="rgba(0, 146, 255, 0.7)"
               strokeWidth={2}
             />
           </LineChart>
         </ResponsiveContainer>
       </TabsContent>
-      <TabsContent value="pie">
+      {/* Spending chart */}
+      <TabsContent value="spending">
         <ResponsiveContainer width="100%" height={350}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) =>
-                `${name} ${(percent * 100).toFixed(0)}%`
-              }
-            >
-              {pieData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
+          <ComposedChart data={formattedData}>
+            <XAxis
+              dataKey="name"
+              stroke="#888888"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="#888888"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `$${value}`}
+            />
             <Tooltip
               contentStyle={{
                 background: "rgba(0, 0, 0, 0.8)",
@@ -150,8 +177,23 @@ export function Overview() {
               }}
               itemStyle={{ color: "#fff" }}
             />
-            <Legend />
-          </PieChart>
+            <Legend
+              formatter={(value) =>
+                value.charAt(0).toUpperCase() + value.slice(1)
+              }
+            />
+            <Bar
+              dataKey="spending"
+              fill="rgba(0, 146, 255, 0.7)"
+              radius={[4, 4, 0, 0]}
+            />
+            <Line
+              type="monotone"
+              dataKey="Forecast"
+              stroke="rgba(172, 127, 244, 0.7)"
+              strokeWidth={2}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
       </TabsContent>
     </Tabs>
