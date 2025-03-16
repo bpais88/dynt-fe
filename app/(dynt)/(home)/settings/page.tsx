@@ -8,7 +8,6 @@ import { ProfileSettings } from "@/components/settings/profile-settings";
 import { TaxCodeSettings } from "@/components/settings/tax-code-settings";
 import { UsersSettings } from "@/components/settings/users-settings";
 import { Button } from "@/components/ui/button";
-import { useOrganization } from "@/context/OrganizationContext";
 import { useUser } from "@/context/UserContext";
 import { cn } from "@/lib/utils";
 import {
