@@ -181,7 +181,14 @@ export default function Transactions() {
     toast.success("Transactions exported successfully!");
   };
 
-  console.log(transactions, accounts, overview, selectAll);
+  console.log(
+    filters,
+    filters.status,
+    transactions,
+    accounts,
+    overview,
+    selectAll
+  );
 
   return (
     <div className="px-4 md:px-8 py-6">
@@ -225,13 +232,14 @@ export default function Transactions() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Status</label>
                 <Select
-                  value={filters.status}
+                  value={filters.status == undefined ? "" : filters.status}
                   onValueChange={(val) =>
                     setFilters({
                       ...filters,
                       status: val == "all" ? undefined : val,
                     })
                   }
+                  // this is kinda a hack as we cant set the selectItem value to empty string ""
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All statuses" />
@@ -247,7 +255,9 @@ export default function Transactions() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Account</label>
                 <Select
-                  value={filters.accountId}
+                  value={
+                    filters.accountId == undefined ? "" : filters.accountId
+                  }
                   onValueChange={(val) =>
                     setFilters({
                       ...filters,
