@@ -29,6 +29,8 @@ import { useOrganization } from "@/context/OrganizationContext";
 import { saveFile } from "@/utils/helper";
 import { api, RouterOutputs } from "@/utils/trpc";
 import { format } from "date-fns";
+import endOfYear from "date-fns/endOfYear";
+import startOfYear from "date-fns/startOfYear";
 import { useAtom } from "jotai";
 import { json2csv } from "json-2-csv";
 import {
@@ -50,17 +52,14 @@ export type TransactionHistory =
 
 export default function Transactions() {
   const { organizationId } = useOrganization();
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({
-    status: "",
-    accountId: "",
-    category: "",
-    dateRange: "all",
-  });
+
   const [selection, setSelection] = useAtom(selectionAtom);
+  const [filters, setFilters] = useAtom(filterAtom);
+  const [search, setSearch] = useState("");
+
   const observerTarget = useRef(null);
 
-  // Fetch transactions data
+  // api fetch data: transactions, categories, accounts
   const {
     data = { pages: [] },
     isLoading,
@@ -69,29 +68,20 @@ export default function Transactions() {
     hasNextPage,
     refetch,
   } = api.transaction.list.useInfiniteQuery(
-    {
-      organizationId,
-      // TODO: Include filters in the query
-      // filters: {
-      //   status: filters.status,
-      //   accountId: filters.accountId,
-      //   categoryId: filters.category,
-      //   dateRange: filters.dateRange,
-      // }
-    },
-    {
-      getNextPageParam: (p) => p.nextCursor,
-      refetchOnWindowFocus: false,
-    }
+    { organizationId, filters },
+    { getNextPageParam: (p) => p.nextCursor, refetchOnWindowFocus: false }
   );
 
-  // TODO
-  // Fetch account data for filter dropdown
-  // const { data: accounts = [] } = api.account.list.useQuery(organizationId);
+  const { data: accounts = [] } = api.account.list.useQuery(organizationId);
 
-  // Fetch categories data for filter dropdown
-  // const { data: categories = [] } =
-  //   api.transactions.listCateg.list.useQuery(organizationId);
+  const showAccountingOverview = true;
+  const { data: overview } = api.transaction.accountingOverview.useQuery(
+    organizationId,
+    { enabled: showAccountingOverview }
+  );
+
+  const selectAll = api.transaction.selectAll.useMutation();
+  // end api fetch
 
   const transactions = useMemo(() => data.pages.flatMap((p) => p.data), [data]);
 
@@ -146,7 +136,7 @@ export default function Transactions() {
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, search]);
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -157,10 +147,12 @@ export default function Transactions() {
 
   const resetFilters = () => {
     setFilters({
-      status: "",
-      accountId: "",
-      category: "",
-      dateRange: "all",
+      period: {
+        startDate: startOfYear(new Date()),
+        endDate: endOfYear(new Date()),
+      },
+      status: undefined,
+      accountId: undefined,
     });
     setSearch("");
   };
@@ -189,7 +181,7 @@ export default function Transactions() {
     toast.success("Transactions exported successfully!");
   };
 
-  console.log(transactions);
+  console.log(transactions, accounts, overview, selectAll);
 
   return (
     <div className="px-4 md:px-8 py-6">
@@ -217,7 +209,7 @@ export default function Transactions() {
           </div>
 
           {/* Filter Dropdown */}
-          {/* <DropdownMenu>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2 rounded-lg">
                 <Filter className="h-4 w-4" />
@@ -235,14 +227,17 @@ export default function Transactions() {
                 <Select
                   value={filters.status}
                   onValueChange={(val) =>
-                    setFilters({ ...filters, status: val })
+                    setFilters({
+                      ...filters,
+                      status: val == "all" ? undefined : val,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="Booked">Booked</SelectItem>
                     <SelectItem value="Pending">Pending</SelectItem>
                   </SelectContent>
@@ -254,14 +249,17 @@ export default function Transactions() {
                 <Select
                   value={filters.accountId}
                   onValueChange={(val) =>
-                    setFilters({ ...filters, accountId: val })
+                    setFilters({
+                      ...filters,
+                      accountId: val === "all" ? undefined : val,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All accounts" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All accounts</SelectItem>
+                    <SelectItem value="all">All accounts</SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.id} value={account.id}>
                         {account.bankName} - {account.name}
@@ -271,7 +269,7 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium">Category</label>
                 <Select
                   value={filters.category}
@@ -291,9 +289,9 @@ export default function Transactions() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium">Date Range</label>
                 <Select
                   value={filters.dateRange}
@@ -312,7 +310,7 @@ export default function Transactions() {
                     <SelectItem value="lastMonth">Last month</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               <div className="flex justify-between pt-2">
                 <Button variant="outline" size="sm" onClick={resetFilters}>
@@ -326,7 +324,7 @@ export default function Transactions() {
                 </Button>
               </div>
             </DropdownMenuContent>
-          </DropdownMenu> */}
+          </DropdownMenu>
 
           {/* Refresh Button */}
           <Button
