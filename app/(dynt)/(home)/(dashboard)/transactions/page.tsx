@@ -2,20 +2,15 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
+import { DateRangePicker } from "@/components/date-range-picker";
 import {
   Select,
   SelectContent,
@@ -31,26 +26,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrganization } from "@/context/OrganizationContext";
-import { cn } from "@/lib/utils";
 import { saveFile } from "@/utils/helper";
 import { api, RouterOutputs } from "@/utils/trpc";
-import { Tabs } from "@radix-ui/react-tabs";
-import { endOfMonth, format, startOfMonth, subDays, subMonths } from "date-fns";
+import { format } from "date-fns";
 import endOfYear from "date-fns/endOfYear";
 import startOfYear from "date-fns/startOfYear";
 import { useAtom } from "jotai";
 import { json2csv } from "json-2-csv";
-import {
-  CalendarIcon,
-  ChevronDown,
-  Download,
-  Filter,
-  RefreshCcw,
-  Search,
-  X,
-} from "lucide-react";
+import { Download, Filter, RefreshCcw, Search, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -66,6 +50,7 @@ export default function Transactions() {
   const [selection, setSelection] = useAtom(selectionAtom);
   const [filters, setFilters] = useAtom(filterAtom);
   const [search, setSearch] = useState("");
+  const [allLoaded, setAllLoaded] = useState(false);
 
   const observerTarget = useRef(null);
 
@@ -79,7 +64,19 @@ export default function Transactions() {
     refetch,
   } = api.transaction.list.useInfiniteQuery(
     { organizationId, filters },
-    { getNextPageParam: (p) => p.nextCursor, refetchOnWindowFocus: false }
+    {
+      getNextPageParam: (p) => p.nextCursor,
+      refetchOnWindowFocus: false,
+      onSuccess: (data) => {
+        // Check if the last page has fewer items than expected or no next cursor
+        const lastPage = data.pages[data.pages.length - 1];
+        if (!lastPage.nextCursor || lastPage.data.length === 0) {
+          setAllLoaded(true);
+        } else {
+          setAllLoaded(false);
+        }
+      },
+    }
   );
 
   const { data: accounts = [] } = api.account.list.useQuery(organizationId);
@@ -126,12 +123,13 @@ export default function Transactions() {
           entries[0].isIntersecting &&
           hasNextPage &&
           !isFetchingNextPage &&
-          !search
+          !search &&
+          !allLoaded
         ) {
           fetchNextPage();
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.4 }
     );
 
     const currentTarget = observerTarget.current;
@@ -144,7 +142,12 @@ export default function Transactions() {
         observer.unobserve(currentTarget);
       }
     };
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, search]);
+  }, [allLoaded, fetchNextPage, hasNextPage, isFetchingNextPage, search]);
+
+  // Reset all loaded state when search or filters change
+  useEffect(() => {
+    setAllLoaded(false);
+  }, [search, filters]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -165,6 +168,7 @@ export default function Transactions() {
       accountId: undefined,
     });
     setSearch("");
+    setAllLoaded(false);
   };
 
   const handleExportCSV = () => {
@@ -338,7 +342,9 @@ export default function Transactions() {
               </div> */}
 
               <div className="mt-4">
-                <DateRangeFilter filters={filters} setFilters={setFilters} />
+                <div className="flex justify-between items-center">
+                  <DateRangePicker filters={filters} setFilters={setFilters} />
+                </div>
               </div>
 
               <div className="flex justify-between pt-2">
@@ -536,7 +542,7 @@ export default function Transactions() {
             {isFetchingNextPage ? (
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
             ) : // Only show "Scroll to load more" when there are no active search/filters AND there's more data
-            search ? null : hasNextPage ? (
+            search ? null : hasNextPage && !allLoaded ? (
               <p className="text-sm text-gray-500">Scroll to load more</p>
             ) : filteredTransactions.length > 0 ? (
               <p className="text-sm text-gray-500">All transactions loaded</p>
@@ -544,218 +550,6 @@ export default function Transactions() {
           </div>
         </Card>
       )}
-    </div>
-  );
-}
-
-function DateRangeFilter({ filters, setFilters }) {
-  // Today's date
-  const today = new Date();
-
-  // Create date range presets
-  const presets = {
-    all: {
-      label: "All time",
-      value: "all",
-      period: { startDate: undefined, endDate: undefined },
-    },
-    last7days: {
-      label: "Last 7 days",
-      value: "last7days",
-      period: {
-        startDate: subDays(today, 7),
-        endDate: today,
-      },
-    },
-    last30days: {
-      label: "Last 30 days",
-      value: "last30days",
-      period: {
-        startDate: subDays(today, 30),
-        endDate: today,
-      },
-    },
-    thisMonth: {
-      label: "This month",
-      value: "thisMonth",
-      period: {
-        startDate: startOfMonth(today),
-        endDate: today,
-      },
-    },
-    lastMonth: {
-      label: "Last month",
-      value: "lastMonth",
-      period: {
-        startDate: startOfMonth(subMonths(today, 1)),
-        endDate: endOfMonth(subMonths(today, 1)),
-      },
-    },
-  };
-
-  // Get the currently selected preset (or custom if none match)
-  const getSelectedPreset = () => {
-    const { startDate, endDate } = filters.period || {};
-
-    // Check if current date range matches any preset
-    for (const [key, preset] of Object.entries(presets)) {
-      if (key === "all" && !startDate && !endDate) return preset.value;
-
-      if (preset.period.startDate && preset.period.endDate) {
-        const presetStart = format(preset.period.startDate, "yyyy-MM-dd");
-        const presetEnd = format(preset.period.endDate, "yyyy-MM-dd");
-
-        const currentStart = startDate
-          ? format(new Date(startDate), "yyyy-MM-dd")
-          : null;
-        const currentEnd = endDate
-          ? format(new Date(endDate), "yyyy-MM-dd")
-          : null;
-
-        if (presetStart === currentStart && presetEnd === currentEnd) {
-          return preset.value;
-        }
-      }
-    }
-
-    return "custom";
-  };
-
-  // State to manage the calendar date range
-  const [calendarDate, setCalendarDate] = useState({
-    from: filters.period?.startDate || undefined,
-    to: filters.period?.endDate || undefined,
-  });
-
-  // Function to update filters when dates change
-  const handleDateChange = (range) => {
-    setCalendarDate(range);
-
-    if (range.from && range.to) {
-      setFilters({
-        ...filters,
-        period: {
-          startDate: range.from,
-          endDate: range.to,
-        },
-      });
-    }
-  };
-
-  // Function to apply preset date ranges
-  const applyPreset = (presetValue) => {
-    const preset = presets[presetValue];
-    if (!preset) return;
-
-    setFilters({
-      ...filters,
-      period: preset.period,
-    });
-
-    setCalendarDate({
-      from: preset.period.startDate,
-      to: preset.period.endDate,
-    });
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium">Date Range</label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !filters.period?.startDate &&
-                !filters.period?.endDate &&
-                "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {filters.period?.startDate && filters.period?.endDate ? (
-              <>
-                {format(new Date(filters.period.startDate), "MMM d, yyyy")} -{" "}
-                {format(new Date(filters.period.endDate), "MMM d, yyyy")}
-              </>
-            ) : (
-              <span>All time</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Tabs defaultValue="presets">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="presets">Presets</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            </TabsList>
-            <TabsContent value="presets" className="p-4 space-y-4">
-              <div className="space-y-2">
-                {Object.entries(presets).map(([key, preset]) => (
-                  <Button
-                    key={key}
-                    variant={
-                      getSelectedPreset() === key ? "default" : "outline"
-                    }
-                    className="w-full justify-start"
-                    onClick={() => applyPreset(key)}
-                  >
-                    {preset.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => applyPreset("all")}
-                  className="mr-2"
-                >
-                  Reset
-                </Button>
-                <Button onClick={() => applyPreset(getSelectedPreset())}>
-                  Apply
-                </Button>
-              </div>
-            </TabsContent>
-            <TabsContent value="calendar" className="p-0">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={calendarDate.from || today}
-                selected={calendarDate}
-                onSelect={handleDateChange}
-                numberOfMonths={2}
-                className="border-t"
-              />
-              <div className="p-3 border-t flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setCalendarDate({ from: undefined, to: undefined });
-                    applyPreset("all");
-                  }}
-                >
-                  Reset
-                </Button>
-                <Button
-                  disabled={!calendarDate.from || !calendarDate.to}
-                  onClick={() => {
-                    setFilters({
-                      ...filters,
-                      period: {
-                        startDate: calendarDate.from,
-                        endDate: calendarDate.to,
-                      },
-                    });
-                  }}
-                >
-                  Apply
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </PopoverContent>
-      </Popover>
     </div>
   );
 }
