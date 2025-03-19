@@ -24,6 +24,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import React, { memo, useMemo } from "react";
+
+// Split base fields into separate components
+const FormField = memo(
+  ({
+    name,
+    title,
+    placeholder,
+    value,
+    onChange,
+    error,
+  }: {
+    name: string;
+    title: string;
+    placeholder: string;
+    value: string;
+    onChange: (e: any) => void;
+    error?: string;
+  }) => (
+    <div key={name}>
+      <Label>{title}</Label>
+      <Input placeholder={placeholder} value={value} onChange={onChange} />
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </div>
+  )
+);
+
+FormField.displayName = "FormField";
 
 const employeeCounts = [
   "1-10",
@@ -71,44 +99,101 @@ const baseFields = [
   },
 ];
 
+const MemoizedSelectItem = memo(SelectItem);
+
+// Memoize expensive lists
+const MccSelect = memo(
+  ({ onValueChange }: { onValueChange: (value: string) => void }) => (
+    <div className="md:col-span-2">
+      <Label>MCC</Label>
+      <Select onValueChange={onValueChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select MCC" />
+        </SelectTrigger>
+        <SelectContent>
+          {mccList.map((mcc) => (
+            <MemoizedSelectItem key={mcc.code} value={mcc.code}>
+              {`${mcc.category} (${mcc.code})`}
+            </MemoizedSelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+);
+
+MccSelect.displayName = "MccSelect";
+
 export default function CreateOrganizationPage() {
   const { userId } = useUser<true>();
-  const { handleChange, inputs, setValue, errors, setErrors } =
-    useForm<CreateOrganization>({
-      phone: "",
-      name: "",
-      defaultCurrency: "",
-      business_tax_number: "",
-      email: "",
-      countryId: 0,
-    });
+  const { handleChange, inputs, setValue, errors, setErrors } = useForm<
+    Partial<CreateOrganization>
+  >({});
 
   const utils = api.useUtils();
-
   const createOrg = api.organizations.create.useMutation();
+
+  // Memoize form fields
+  const basicInfoFields = useMemo(
+    () =>
+      baseFields
+        .slice(0, 6)
+        .map(({ name, title, placeholder }) => (
+          <FormField
+            key={name}
+            name={name}
+            title={title}
+            placeholder={placeholder}
+            onChange={handleChange(name as keyof CreateOrganization)}
+            value={inputs[name as keyof CreateOrganization] || ""}
+            error={errors[name as keyof CreateOrganization]}
+          />
+        )),
+    [inputs, handleChange, errors]
+  );
+
+  const additionalInfoFields = useMemo(
+    () =>
+      baseFields
+        .slice(6)
+        .map(({ name, title, placeholder }) => (
+          <FormField
+            key={name}
+            name={name}
+            title={title}
+            placeholder={placeholder}
+            value={inputs[name as keyof CreateOrganization] || ""}
+            onChange={handleChange(name as keyof CreateOrganization)}
+            error={errors[name as keyof CreateOrganization]}
+          />
+        )),
+    [inputs, handleChange, errors]
+  );
 
   const handleSave = async () => {
     const validate = CreateOrganization.safeParse(inputs);
-
     if (!validate.success) {
       setErrors(validate.error.formErrors.fieldErrors);
       console.log("validation Failed::", validate.error.formErrors.fieldErrors);
       return toast.error("Please fix the validation errors");
     }
 
-    const res = await createOrg.mutateAsync({
-      ...validate.data,
-      userId: userId,
-    });
+    try {
+      const res = await createOrg.mutateAsync({
+        ...validate.data,
+        userId: userId,
+      });
 
-    console.log("Organization created successfully. Response:", res);
+      utils.organizations.myOrganizations.setData(userId, (p = []) =>
+        p.map((o) => (o.id === res.id ? { ...o, ...res } : o))
+      );
 
-    // utils.organizations.myOrganizations.setData(userId, (prev = []) => [
-    //   ...prev,
-    //   res,
-    // ]);
-
-    toast.success("Organization created successfully");
+      console.log("Organization created successfully. Response:", res);
+      toast.success("Organization created successfully");
+    } catch (error) {
+      toast.error("Failed to create organization");
+      console.error(error);
+    }
   };
 
   return (
@@ -119,21 +204,7 @@ export default function CreateOrganizationPage() {
           <CardTitle>Basic Information</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {baseFields.slice(0, 6).map(({ name, title, placeholder }) => (
-            <div key={name}>
-              <Label>{title}</Label>
-              <Input
-                placeholder={placeholder}
-                value={inputs[name as keyof CreateOrganization] || ""}
-                onChange={handleChange(name as keyof CreateOrganization)}
-              />
-              {errors[name as keyof CreateOrganization] && (
-                <p className="text-red-500 text-sm">
-                  {errors[name as keyof CreateOrganization]}
-                </p>
-              )}
-            </div>
-          ))}
+          {basicInfoFields}
 
           <PhoneInput
             onChange={(e) => setValue("phone", e)}
@@ -149,29 +220,15 @@ export default function CreateOrganizationPage() {
               </SelectTrigger>
               <SelectContent>
                 {types.map((type) => (
-                  <SelectItem key={type} value={type}>
+                  <MemoizedSelectItem key={type} value={type}>
                     {formatLabel(type)}
-                  </SelectItem>
+                  </MemoizedSelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="md:col-span-2">
-            <Label>MCC</Label>
-            <Select onValueChange={(e) => setValue("mcc", e)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select MCC" />
-              </SelectTrigger>
-              <SelectContent>
-                {mccList.map((mcc) => (
-                  <SelectItem key={mcc.code} value={mcc.code}>
-                    {`${mcc.category} (${mcc.code})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <MccSelect onValueChange={(e) => setValue("mcc", e)} />
 
           <div>
             <Label>Default Currency</Label>
@@ -181,9 +238,9 @@ export default function CreateOrganizationPage() {
               </SelectTrigger>
               <SelectContent>
                 {["EUR", "GBP"].map((currency) => (
-                  <SelectItem key={currency} value={currency}>
+                  <MemoizedSelectItem key={currency} value={currency}>
                     {currency}
-                  </SelectItem>
+                  </MemoizedSelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -197,9 +254,9 @@ export default function CreateOrganizationPage() {
               </SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
+                  <MemoizedSelectItem key={c.id} value={c.id.toString()}>
                     {c.name}
-                  </SelectItem>
+                  </MemoizedSelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -212,47 +269,7 @@ export default function CreateOrganizationPage() {
           <CardTitle>Additional Information</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {baseFields.slice(6).map(({ name, title, placeholder }) => (
-            <div key={name}>
-              <Label>{title}</Label>
-              <Input
-                placeholder={placeholder}
-                value={inputs[name as keyof CreateOrganization] || ""}
-                onChange={handleChange(name as keyof CreateOrganization)}
-              />
-              {errors[name as keyof CreateOrganization] && (
-                <p className="text-red-500 text-sm">
-                  {errors[name as keyof CreateOrganization]}
-                </p>
-              )}
-            </div>
-          ))}
-
-          <div>
-            <Label>Employee Count</Label>
-            <Select onValueChange={(e) => setValue("employeeCount", e)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select employee count" />
-              </SelectTrigger>
-              <SelectContent>
-                {employeeCounts.map((count) => (
-                  <SelectItem key={count} value={count}>
-                    {count}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Label>Require Approval to Transfer Payment</Label>
-            <Switch
-              checked={inputs.requiredApprovalToTransferPayment}
-              onCheckedChange={(val) =>
-                setValue("requiredApprovalToTransferPayment", val)
-              }
-            />
-          </div>
+          {additionalInfoFields}
         </CardContent>
       </Card>
 
