@@ -1,12 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
 import { DateRangePicker } from "@/components/date-range-picker";
@@ -18,16 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { useOrganization } from "@/context/OrganizationContext";
 import { saveFile } from "@/utils/helper";
 import { api, RouterOutputs } from "@/utils/trpc";
-import { format } from "date-fns";
-import endOfYear from "date-fns/endOfYear";
+import { endOfDay, format } from "date-fns";
 import startOfYear from "date-fns/startOfYear";
 import { useAtom } from "jotai";
 import { json2csv } from "json-2-csv";
-import { Download, Filter, RefreshCcw, Search, X } from "lucide-react";
+import { Download, RefreshCcw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { filterAtom } from "./store/filters";
@@ -144,7 +136,7 @@ export default function Transactions() {
           </div>
         </div>
 
-        {/* Filter Row 1 - Search and Dropdowns */}
+        {/* Filter Menu */}
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search Input */}
           <div className="relative flex-grow">
@@ -165,7 +157,27 @@ export default function Transactions() {
             )}
           </div>
 
-          {/* Status Filter */}
+          {/* Filter by Type: Debit/Credit */}
+          <Select
+            value={filters.type === undefined ? "all" : filters.type}
+            onValueChange={(val) =>
+              setFilters({
+                ...filters,
+                type: val === "all" ? undefined : val,
+              })
+            }
+          >
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="debit">Debit</SelectItem>
+              <SelectItem value="credit">Credit</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Filter by Status */}
           <Select
             value={filters.status === undefined ? "all" : filters.status}
             onValueChange={(val) =>
@@ -189,27 +201,7 @@ export default function Transactions() {
             </SelectContent>
           </Select>
 
-          {/* Type Filter */}
-          <Select
-            value={filters.type === undefined ? "all" : filters.type}
-            onValueChange={(val) =>
-              setFilters({
-                ...filters,
-                type: val === "all" ? undefined : val,
-              })
-            }
-          >
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="debit">Debit</SelectItem>
-              <SelectItem value="credit">Credit</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Account Filter */}
+          {/* Filter by Account */}
           <Select
             value={filters.accountId === undefined ? "all" : filters.accountId}
             onValueChange={(val) =>
@@ -231,10 +223,8 @@ export default function Transactions() {
               ))}
             </SelectContent>
           </Select>
-        </div>
 
-        {/* Filter Row 2 - Date Range and Reset */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          {/* Filter by Date Range */}
           <DateRangePicker filters={filters} setFilters={setFilters} />
 
           <Button
@@ -246,6 +236,8 @@ export default function Transactions() {
             Reset Filters
           </Button>
         </div>
+
+        {/* <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3"></div> */}
       </div>
 
       {/* Transactions Table */}
