@@ -57,3 +57,21 @@ export const saveFile = async (file: Blob, name: string) => {
   link.click();
   document.body.removeChild(link);
 };
+
+export const formatLabel = (str?: string | null) => {
+  if (!str) return "";
+  return str
+    .replace(/_|-/g, " ")
+    .replace(/([a-z])([A-Z])|([A-Z])(?=[A-Z][a-z])/g, "$1$3 $2")
+    .toLowerCase();
+};
+
+export const validatePhone = (phoneNumber: string) => {
+  const pattern = /^$|^[0-9+\(\)\-]+$/;
+  return pattern.test(phoneNumber);
+};
+
+export const validateAlphaNumeric = (str: string) => {
+  const pattern = /^[a-zA-Z0-9]*$/;
+  return pattern.test(str);
+};
