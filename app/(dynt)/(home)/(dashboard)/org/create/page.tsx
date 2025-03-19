@@ -8,7 +8,6 @@ import { CreateOrganization, UpdateOrganization } from "@/types/validation";
 import { formatLabel } from "@/utils/helper";
 import { api } from "@/utils/trpc";
 import useForm from "@/utils/useForm";
-import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { BiCheck } from "react-icons/bi";
 
@@ -35,6 +34,7 @@ const employeeCounts = [
   "1001-5000",
   "5001+",
 ];
+
 const types: UpdateOrganization["type"][] = [
   "company",
   "government_entity",
@@ -74,7 +74,15 @@ const baseFields = [
 export default function CreateOrganizationPage() {
   const { userId } = useUser<true>();
   const { handleChange, inputs, setValue, errors, setErrors } =
-    useForm<UpdateOrganization>({});
+    useForm<CreateOrganization>({
+      phone: "",
+      name: "",
+      defaultCurrency: "",
+      business_tax_number: "",
+      email: "",
+      countryId: 0,
+    });
+
   const utils = api.useUtils();
 
   const createOrg = api.organizations.create.useMutation();
@@ -105,6 +113,7 @@ export default function CreateOrganizationPage() {
 
   return (
     <div className="space-y-8">
+      <h2 className="text-2xl font-bold">Create Organization</h2>
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
@@ -115,12 +124,12 @@ export default function CreateOrganizationPage() {
               <Label>{title}</Label>
               <Input
                 placeholder={placeholder}
-                value={inputs[name as keyof UpdateOrganization] || ""}
-                onChange={handleChange(name as keyof UpdateOrganization)}
+                value={inputs[name as keyof CreateOrganization] || ""}
+                onChange={handleChange(name as keyof CreateOrganization)}
               />
-              {errors[name as keyof UpdateOrganization] && (
+              {errors[name as keyof CreateOrganization] && (
                 <p className="text-red-500 text-sm">
-                  {errors[name as keyof UpdateOrganization]}
+                  {errors[name as keyof CreateOrganization]}
                 </p>
               )}
             </div>
@@ -163,45 +172,6 @@ export default function CreateOrganizationPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Additional Information</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {baseFields.slice(6).map(({ name, title, placeholder }) => (
-            <div key={name}>
-              <Label>{title}</Label>
-              <Input
-                placeholder={placeholder}
-                value={inputs[name as keyof UpdateOrganization] || ""}
-                onChange={handleChange(name as keyof UpdateOrganization)}
-              />
-              {errors[name as keyof UpdateOrganization] && (
-                <p className="text-red-500 text-sm">
-                  {errors[name as keyof UpdateOrganization]}
-                </p>
-              )}
-            </div>
-          ))}
-
-          <div>
-            <Label>Employee Count</Label>
-            <Select onValueChange={(e) => setValue("employeeCount", e)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select employee count" />
-              </SelectTrigger>
-              <SelectContent>
-                {employeeCounts.map((count) => (
-                  <SelectItem key={count} value={count}>
-                    {count}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <div>
             <Label>Default Currency</Label>
@@ -229,6 +199,45 @@ export default function CreateOrganizationPage() {
                 {countries.map((c) => (
                   <SelectItem key={c.id} value={c.id.toString()}>
                     {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Additional Information</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {baseFields.slice(6).map(({ name, title, placeholder }) => (
+            <div key={name}>
+              <Label>{title}</Label>
+              <Input
+                placeholder={placeholder}
+                value={inputs[name as keyof CreateOrganization] || ""}
+                onChange={handleChange(name as keyof CreateOrganization)}
+              />
+              {errors[name as keyof CreateOrganization] && (
+                <p className="text-red-500 text-sm">
+                  {errors[name as keyof CreateOrganization]}
+                </p>
+              )}
+            </div>
+          ))}
+
+          <div>
+            <Label>Employee Count</Label>
+            <Select onValueChange={(e) => setValue("employeeCount", e)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select employee count" />
+              </SelectTrigger>
+              <SelectContent>
+                {employeeCounts.map((count) => (
+                  <SelectItem key={count} value={count}>
+                    {count}
                   </SelectItem>
                 ))}
               </SelectContent>

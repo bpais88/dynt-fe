@@ -58,7 +58,7 @@ const useForm = <A extends object>(initial: A) => {
           [name]: newValue,
         }));
       },
-    []
+    [handleTouch]
   );
 
   const setValue = <
