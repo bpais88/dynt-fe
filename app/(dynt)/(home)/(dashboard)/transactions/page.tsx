@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrganization } from "@/context/OrganizationContext";
+import { Enums } from "@/types";
 import { saveFile } from "@/utils/helper";
 import { api, RouterOutputs } from "@/utils/trpc";
 import { endOfDay, format } from "date-fns";
@@ -183,7 +184,7 @@ export default function Transactions() {
             onValueChange={(val) =>
               setFilters({
                 ...filters,
-                status: val === "all" ? undefined : val,
+                status: (val as Enums["SwanTransactionStatus"]) || undefined,
               })
             }
           >
@@ -192,12 +193,12 @@ export default function Transactions() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="Booked">Booked</SelectItem>
-              <SelectItem value="Rejected">Rejected</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Canceled">Canceled</SelectItem>
-              <SelectItem value="Upcoming">Upcoming</SelectItem>
-              <SelectItem value="Released">Released</SelectItem>
+              <SelectItem value="Booked">Booked</SelectItem>
+              <SelectItem value="Rejected">Rejected (swan only)</SelectItem>
+              <SelectItem value="Canceled">Canceled (swan only)</SelectItem>
+              <SelectItem value="Upcoming">Upcoming (swan only)</SelectItem>
+              <SelectItem value="Released">Released (swan only)</SelectItem>
             </SelectContent>
           </Select>
 
