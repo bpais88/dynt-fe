@@ -37,7 +37,6 @@ export type TransactionHistory =
 
 export default function Transactions() {
   const { organizationId } = useOrganization();
-
   const [filters, setFilters] = useAtom(filterAtom);
   const [search, setSearch] = useState("");
   const [allLoaded, setAllLoaded] = useState(false);
@@ -66,15 +65,12 @@ export default function Transactions() {
       },
     }
   );
-
   const { data: accounts = [] } = api.account.list.useQuery(organizationId);
-
   const showAccountingOverview = true;
   const { data: overview } = api.transaction.accountingOverview.useQuery(
     organizationId,
     { enabled: showAccountingOverview }
   );
-
   const selectAll = api.transaction.selectAll.useMutation();
   // end api fetch
 
@@ -85,14 +81,12 @@ export default function Transactions() {
     () =>
       transactions.filter((t) => {
         if (!search) return true;
-
         const searchLower = search.toLowerCase();
         const merchantMatch =
           t.merchant?.name?.toLowerCase().includes(searchLower) || false;
         const descriptionMatch =
           t.description?.toLowerCase().includes(searchLower) || false;
         const amountMatch = t.amount.toString().includes(search);
-
         return merchantMatch || descriptionMatch || amountMatch;
       }),
     [transactions, search]
@@ -103,75 +97,63 @@ export default function Transactions() {
     setAllLoaded(false);
   }, [search, filters]);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const resetFilters = () => {
     setFilters({
       period: {
         startDate: startOfYear(new Date()),
-        endDate: endOfYear(new Date()),
+        endDate: endOfDay(new Date()),
       },
       status: undefined,
       accountId: undefined,
+      type: undefined,
     });
     setSearch("");
     setAllLoaded(false);
   };
 
-  const handleExportCSV = () => {
-    const exportData = filteredTransactions.map((tx) => ({
-      Date: formatDate(tx.date),
-      Account: tx.account?.bankName || "Unknown",
-      IBAN: tx.account?.IBAN || "",
-      Merchant: tx.merchant?.name || "Unknown",
-      Description: tx.description || "",
-      Status: tx.status,
-      Amount: tx.amount,
-      Currency: tx.currency,
-      Category: tx.category?.name || "Uncategorized",
-    }));
-
-    if (exportData.length === 0) {
-      toast.warning("No transactions to export");
-      return;
-    }
-
-    const csvData = json2csv(exportData);
-    const blob = new Blob([csvData], { type: "text/csv" });
-    saveFile(blob, `Transactions_${format(new Date(), "yyyy-MM-dd")}.csv`);
-    toast.success("Transactions exported successfully!");
-  };
-
-  console.log(
-    filters,
-    filters.status,
-    transactions,
-    accounts,
-    overview,
-    selectAll
-  );
-
   return (
     <div className="px-4 md:px-8 py-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <h2 className="text-2xl font-bold">Transactions</h2>
+      <div className="flex flex-col gap-4">
+        {/* Header Row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold">Transactions</h2>
 
+          <div className="flex gap-2">
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              className="gap-2 rounded-lg"
+              onClick={() => {
+                refetch();
+                toast.success("Transactions refreshed");
+              }}
+            >
+              <RefreshCcw className="h-4 w-4" />
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
+
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              className="gap-2 rounded-lg"
+              onClick={() => handleExportCSV(filteredTransactions)}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden md:inline">Export</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Filter Row 1 - Search and Dropdowns */}
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search Input */}
-          <div className="relative">
+          <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search transactions..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 w-full md:w-64 rounded-lg"
+              className="pl-10 w-full rounded-lg"
             />
             {search && (
               <button
@@ -183,128 +165,137 @@ export default function Transactions() {
             )}
           </div>
 
-          {/* Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 rounded-lg">
-                <Filter className="h-4 w-4" />
-                Filters{" "}
-                {Object.values(filters).some((v) => v) && (
-                  <Badge variant="outline" className="ml-1">
-                    Active
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-72 p-4 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <Select
-                  value={filters.status == undefined ? "" : filters.status}
-                  onValueChange={(val) =>
-                    setFilters({
-                      ...filters,
-                      status: val == "all" ? undefined : val,
-                    })
-                  }
-                  // this is kinda a hack as we cant set the selectItem value to empty string ""
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="Booked">Booked</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Status Filter */}
+          <Select
+            value={filters.status === undefined ? "all" : filters.status}
+            onValueChange={(val) =>
+              setFilters({
+                ...filters,
+                status: val === "all" ? undefined : val,
+              })
+            }
+          >
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="Booked">Booked</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Canceled">Canceled</SelectItem>
+              <SelectItem value="Upcoming">Upcoming</SelectItem>
+              <SelectItem value="Released">Released</SelectItem>
+            </SelectContent>
+          </Select>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Account</label>
-                <Select
-                  value={
-                    filters.accountId == undefined ? "" : filters.accountId
-                  }
-                  onValueChange={(val) =>
-                    setFilters({
-                      ...filters,
-                      accountId: val === "all" ? undefined : val,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All accounts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All accounts</SelectItem>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.bankName} - {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Type Filter */}
+          <Select
+            value={filters.type === undefined ? "all" : filters.type}
+            onValueChange={(val) =>
+              setFilters({
+                ...filters,
+                type: val === "all" ? undefined : val,
+              })
+            }
+          >
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="debit">Debit</SelectItem>
+              <SelectItem value="credit">Credit</SelectItem>
+            </SelectContent>
+          </Select>
 
-              <div className="mt-4">
-                <div className="flex justify-between items-center">
-                  <DateRangePicker filters={filters} setFilters={setFilters} />
-                </div>
-              </div>
+          {/* Account Filter */}
+          <Select
+            value={filters.accountId === undefined ? "all" : filters.accountId}
+            onValueChange={(val) =>
+              setFilters({
+                ...filters,
+                accountId: val === "all" ? undefined : val,
+              })
+            }
+          >
+            <SelectTrigger className="w-full md:w-64">
+              <SelectValue placeholder="All accounts" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60 overflow-y-auto">
+              <SelectItem value="all">All accounts</SelectItem>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.bankName} - {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-              <div className="flex justify-between pt-2">
-                <Button variant="outline" size="sm" onClick={resetFilters}>
-                  Reset
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => toast.success("Filters applied")}
-                >
-                  Apply Filters
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* Filter Row 2 - Date Range and Reset */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <DateRangePicker filters={filters} setFilters={setFilters} />
 
-          {/* Refresh Button */}
           <Button
             variant="outline"
-            className="gap-2 rounded-lg"
-            onClick={() => {
-              refetch();
-              toast.success("Transactions refreshed");
-            }}
+            size="sm"
+            onClick={resetFilters}
+            className="self-end md:self-auto"
           >
-            <RefreshCcw className="h-4 w-4" />
-            Refresh
-          </Button>
-
-          {/* Export Button */}
-          <Button
-            variant="outline"
-            className="gap-2 rounded-lg"
-            onClick={handleExportCSV}
-          >
-            <Download className="h-4 w-4" />
-            Export
+            Reset Filters
           </Button>
         </div>
       </div>
 
       {/* Transactions Table */}
-      <TransactionsTable
-        transactions={filteredTransactions}
-        isLoading={isLoading}
-        isFetchingNextPage={isFetchingNextPage}
-        hasNextPage={hasNextPage}
-        allLoaded={allLoaded}
-        search={search}
-        formatDate={formatDate}
-        fetchNextPage={fetchNextPage}
-        resetFilters={resetFilters}
-        filters={filters}
-      />
+      <div className="mt-6">
+        <TransactionsTable
+          transactions={filteredTransactions}
+          isLoading={isLoading}
+          isFetchingNextPage={isFetchingNextPage}
+          hasNextPage={hasNextPage}
+          allLoaded={allLoaded}
+          search={search}
+          formatDate={formatDate}
+          fetchNextPage={fetchNextPage}
+          resetFilters={resetFilters}
+          filters={filters}
+        />
+      </div>
     </div>
   );
 }
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const handleExportCSV = (filteredTransactions: TransactionHistory[]) => {
+  const exportData = filteredTransactions.map((tx) => ({
+    Date: formatDate(tx.date),
+    Account: tx.account?.bankName || "Unknown",
+    IBAN: tx.account?.IBAN || "",
+    Merchant: tx.merchant?.name || "Unknown",
+    Description: tx.description || "",
+    Status: tx.status,
+    Amount: tx.amount,
+    Currency: tx.currency,
+    Category: tx.category?.name || "Uncategorized",
+  }));
+
+  if (exportData.length === 0) {
+    toast.warning("No transactions to export");
+    return;
+  }
+
+  const csvData = json2csv(exportData);
+  const blob = new Blob([csvData], { type: "text/csv" });
+  saveFile(blob, `Transactions_${format(new Date(), "yyyy-MM-dd")}.csv`);
+  toast.success("Transactions exported successfully!");
+};
