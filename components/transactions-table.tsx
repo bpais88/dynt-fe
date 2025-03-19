@@ -157,26 +157,40 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({
                             />
                           </div>
                         )}
-                        <div>
-                          <div className="font-medium">
+                        <div className="min-w-0">
+                          <div
+                            className="font-medium truncate max-w-[160px]"
+                            title={tx.account?.name || "Unknown Bank"}
+                          >
                             {tx.account?.name || "Unknown Bank"}
                           </div>
-                          <div className="text-xs text-gray-500 truncate max-w-[120px]">
+                          <div
+                            className="text-xs text-gray-500 truncate max-w-[160px]"
+                            title={tx.account?.IBAN || tx.account?.BBAN || ""}
+                          >
                             {tx.account?.IBAN || tx.account?.BBAN}
                           </div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4">
-                      <div className="font-medium">
+
+                    <TableCell className="p-4 min-w-0">
+                      <div
+                        className="font-medium truncate max-w-[200px]"
+                        title={tx.merchant?.name || "Unknown Merchant"}
+                      >
                         {tx.merchant?.name || "Unknown Merchant"}
                       </div>
                       {tx.description && (
-                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                        <div
+                          className="text-xs text-gray-500 truncate max-w-[200px]"
+                          title={tx.description}
+                        >
                           {tx.description}
                         </div>
                       )}
                     </TableCell>
+
                     <TableCell className="p-4">
                       <Badge
                         className={`px-2 py-1 ${
