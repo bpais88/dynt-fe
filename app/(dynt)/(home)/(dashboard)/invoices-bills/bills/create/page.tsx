@@ -174,54 +174,57 @@ export default function CreateBillPage() {
         onOpenChange={setVendorListOpen}
         className="w-full"
       >
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">
-                  {!selectedVendor
-                    ? "Choose a Vendor"
-                    : `Selected Vendor: ${selectedVendor.name}`}
-                </CardTitle>
-                {selectedVendor && (
-                  <CardDescription className="mt-1">
-                    {selectedVendor.email || "No email"} |{" "}
-                    {selectedVendor.phone || "No phone"}
-                  </CardDescription>
+        <Card className="shadow-sm py-2">
+          {/* Make the entire header clickable */}
+          <CollapsibleTrigger asChild className="">
+            <CardHeader className="py-2 cursor-pointer hover:bg-slate-50 rounded-t-md transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">
+                    {!selectedVendor
+                      ? "Choose a Vendor"
+                      : `Vendor: ${selectedVendor.name}`}
+                  </CardTitle>
+                  {selectedVendor && (
+                    <CardDescription className="text-sm mt-1">
+                      {selectedVendor.email || "No email"} |{" "}
+                      {selectedVendor.phone || "No phone"}
+                    </CardDescription>
+                  )}
+                </div>
+                {vendorListOpen ? (
+                  <ChevronUp className="h-4 w-4 text-slate-500" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-slate-500" />
                 )}
               </div>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {vendorListOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-            </div>
-          </CardHeader>
+            </CardHeader>
+          </CollapsibleTrigger>
 
-          <CollapsibleContent>
-            <CardContent>
+          <CollapsibleContent className=" my-0">
+            <CardContent className="py-2 px-3">
               {isVendorsLoading ? (
-                <div className="flex justify-center py-4">
+                <div className="flex justify-center py-3">
                   <p>Loading vendors...</p>
                 </div>
               ) : vendors.length === 0 ? (
                 <div className="flex flex-col items-center py-4 text-center">
-                  <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                  <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
                   <p>No vendors found. Please add a vendor first.</p>
                 </div>
               ) : (
-                <div className="grid gap-2 max-h-64 overflow-y-auto">
+                <div className="grid gap-2 max-h-60 overflow-y-auto p-1">
                   {vendors.map((vendor) => (
                     <Button
                       key={vendor.id}
                       variant={
-                        selectedVendor?.id === vendor.id ? "default" : "outline"
+                        selectedVendor?.id === vendor.id ? "subtle" : "ghost"
                       }
-                      className="justify-start h-auto py-3 px-4 w-full"
+                      className={`justify-start py-2 px-3 h-auto w-full ${
+                        selectedVendor?.id === vendor.id
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                          : "hover:bg-slate-50"
+                      }`}
                       onClick={() => handleVendorSelect(vendor)}
                     >
                       <div className="flex items-center gap-3 w-full">
@@ -230,19 +233,22 @@ export default function CreateBillPage() {
                             src={vendor.photo || ""}
                             alt={vendor.name}
                           />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-slate-200 text-slate-600 text-xs">
                             {getVendorInitials(vendor.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 text-left">
                           <p className="font-medium text-sm">{vendor.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-slate-500 truncate">
                             {vendor.email || "No email"} |{" "}
                             {vendor.city || "No location"}
                           </p>
                         </div>
                         {vendor.business_tax_number && (
-                          <Badge variant="outline" className="ml-auto">
+                          <Badge
+                            variant="outline"
+                            className="ml-auto text-xs bg-transparent"
+                          >
                             VAT: {vendor.business_tax_number}
                           </Badge>
                         )}
@@ -263,72 +269,92 @@ export default function CreateBillPage() {
           onOpenChange={setAccountListOpen}
           className="w-full"
         >
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">
-                    {!accountInfo
-                      ? "Choose a Bank Account"
-                      : `Selected Account: ${
-                          accountInfo?.name || "Unnamed Account"
-                        }`}
-                  </CardTitle>
-                  {accountInfo && (
-                    <CardDescription className="mt-1">
-                      {getAccountDisplayValue(accountInfo)}{" "}
-                      {accountInfo?.currency && `(${accountInfo.currency})`}
-                    </CardDescription>
+          <Card className=" py-2 shadow-sm">
+            {/* Make the entire header clickable, matching the vendor section */}
+            <CollapsibleTrigger asChild>
+              <CardHeader className="py-2 cursor-pointer hover:bg-slate-50 rounded-t-md transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">
+                      {!accountInfo
+                        ? "Choose a Bank Account"
+                        : `Selected Account: ${
+                            accountInfo?.name || "Unnamed Account"
+                          }`}
+                    </CardTitle>
+                    {accountInfo && (
+                      <CardDescription className="text-sm mt-1">
+                        {getAccountDisplayValue(accountInfo)}{" "}
+                        {accountInfo?.currency && `(${accountInfo.currency})`}
+                      </CardDescription>
+                    )}
+                  </div>
+                  {accountListOpen ? (
+                    <ChevronUp className="h-4 w-4 text-slate-500" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-slate-500" />
                   )}
                 </div>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    {accountListOpen ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-              </div>
-            </CardHeader>
+              </CardHeader>
+            </CollapsibleTrigger>
 
-            <CollapsibleContent>
-              <CardContent>
+            <CollapsibleContent className="py-0">
+              <CardContent className="py-2 px-3">
                 {isVendorBankAccountLoading ? (
-                  <div className="flex justify-center py-4">
+                  <div className="flex justify-center py-3">
                     <p>Loading bank accounts...</p>
                   </div>
                 ) : vendorAccounts.length === 0 ? (
                   <div className="flex flex-col items-center py-4 text-center">
-                    <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                    <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
                     <p>No bank accounts found for this vendor.</p>
                   </div>
                 ) : (
-                  <div className="grid gap-2 max-h-48 overflow-y-auto">
+                  <div className="grid gap-2 max-h-48 overflow-y-auto p-1">
                     {vendorAccounts.map((account) => (
                       <Button
                         key={account.id}
-                        variant={
-                          accountInfo?.id === account.id ? "default" : "outline"
-                        }
-                        className="justify-start h-auto py-3 px-4 w-full"
+                        variant="ghost"
+                        className={`justify-start h-auto py-3 px-4 w-full ${
+                          accountInfo?.id === account.id
+                            ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200"
+                            : "hover:bg-slate-50"
+                        }`}
                         onClick={() => handleAccountSelect(account)}
                       >
                         <div className="flex items-center gap-3 w-full">
-                          <div className="h-8 w-8 flex items-center justify-center rounded-full bg-primary/10">
-                            <AiOutlineBank className="h-4 w-4 text-primary" />
+                          <div
+                            className={`h-8 w-8 flex items-center justify-center rounded-full ${
+                              accountInfo?.id === account.id
+                                ? "bg-slate-200"
+                                : "bg-slate-100"
+                            }`}
+                          >
+                            <AiOutlineBank
+                              className={`h-4 w-4 ${
+                                accountInfo?.id === account.id
+                                  ? "text-slate-700"
+                                  : "text-slate-500"
+                              }`}
+                            />
                           </div>
                           <div className="flex-1 text-left">
                             <p className="font-medium text-sm">
                               {account.name || "Unnamed Account"}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-slate-500">
                               {getAccountDisplayValue(account)}
                             </p>
                           </div>
                           {account.currency && (
-                            <Badge variant="outline" className="ml-auto">
+                            <Badge
+                              variant="outline"
+                              className={`ml-auto ${
+                                accountInfo?.id === account.id
+                                  ? "bg-slate-100 text-slate-700 border-slate-200"
+                                  : "bg-transparent"
+                              }`}
+                            >
                               {account.currency}
                             </Badge>
                           )}
