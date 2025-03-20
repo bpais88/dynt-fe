@@ -18,9 +18,6 @@ const PhoneInput: FC<Props> = ({
 }) => {
   return (
     <div className={className}>
-      <label className="label">
-        <span className="label-text">Phone</span>
-      </label>
       <Input
         onChange={(e) => handleChange("+" + e)}
         value={value}
