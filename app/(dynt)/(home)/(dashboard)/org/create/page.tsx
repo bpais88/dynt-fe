@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useOrganization } from "@/context/OrganizationContext";
 import { useUser } from "@/context/UserContext";
 import { countries } from "@/lib/countries";
 import { mccList } from "@/lib/mccList";
@@ -21,6 +22,7 @@ import { CreateOrganization, UpdateOrganization } from "@/types/validation";
 import { formatLabel } from "@/utils/helper";
 import { api } from "@/utils/trpc";
 import useForm from "@/utils/useForm";
+import { useRouter } from "next/navigation";
 import React, { memo, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { BiCheck } from "react-icons/bi";
@@ -168,6 +170,9 @@ export default function CreateOrganizationPage() {
   const utils = api.useUtils();
   const createOrg = api.organizations.create.useMutation();
 
+  const { organizations, setOrganization } = useOrganization();
+  const router = useRouter();
+
   // Function to check if a field is required
   const isFieldRequired = (fieldName: string) =>
     requiredFields.includes(fieldName);
@@ -261,10 +266,15 @@ export default function CreateOrganizationPage() {
         p.map((o) => (o.id === res.id ? { ...o, ...res } : o))
       );
 
-      toast.success("Organization created successfully");
+      console.log("Organization created", res, res.id);
+      console.log(organizations, "&&&");
+      if (res.id) {
+        setOrganization(res);
+        // router.push(`/organizations/${res.id}`);
+        router.push("/");
+      }
     } catch (error: any) {
-      toast.error(error.message || "Failed to create organization");
-      console.error(error);
+      console.error("Failed to create organization", error.message);
     } finally {
       setIsSubmitting(false);
     }
