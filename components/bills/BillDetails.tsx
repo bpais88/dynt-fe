@@ -14,7 +14,7 @@ import { addDays, format } from "date-fns";
 import { CalendarIcon, Loader2, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-// import { scanDocument } from "@/lib/api/utils"; // Replace with your actual OCR API
+// import { scanDocument } from "@/lib/api/utils";
 import { cn } from "@/lib/utils";
 import { createId } from "@paralleldrive/cuid2";
 import CurrencySelect from "./CurrencySelect";
