@@ -1,17 +1,7 @@
 "use client";
 
-import PhoneInput from "@/components/PhoneInput";
-import { useUser } from "@/context/UserContext";
-import { countries } from "@/lib/countries";
-import { mccList } from "@/lib/mccList";
-import { CreateOrganization, UpdateOrganization } from "@/types/validation";
-import { formatLabel } from "@/utils/helper";
-import { api } from "@/utils/trpc";
-import useForm from "@/utils/useForm";
-import { toast } from "react-hot-toast";
-import { BiCheck } from "react-icons/bi";
-
 import LoadingSpin from "@/components/LoadingSpin";
+import PhoneInput from "@/components/PhoneInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +14,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import React, { memo, useMemo } from "react";
+import { useUser } from "@/context/UserContext";
+import { countries } from "@/lib/countries";
+import { mccList } from "@/lib/mccList";
+import { CreateOrganization, UpdateOrganization } from "@/types/validation";
+import { formatLabel } from "@/utils/helper";
+import { api } from "@/utils/trpc";
+import useForm from "@/utils/useForm";
+import React, { memo, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
+import { BiCheck } from "react-icons/bi";
+import { CgAsterisk } from "react-icons/cg";
+
+// Required fields based on CreateOrganization validation schema
+const requiredFields = [
+  "name",
+  "type",
+  "mcc",
+  "defaultCurrency",
+  "countryId",
+  "phone",
+  "email",
+  "address",
+];
 
 // Split base fields into separate components
 const FormField = memo(
@@ -35,6 +47,7 @@ const FormField = memo(
     value,
     onChange,
     error,
+    required = false,
   }: {
     name: string;
     title: string;
@@ -42,15 +55,28 @@ const FormField = memo(
     value: string;
     onChange: (e: any) => void;
     error?: string;
+    required?: boolean;
   }) => (
     <div key={name}>
-      <Label>{title}</Label>
-      <Input placeholder={placeholder} value={value} onChange={onChange} />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <Label className="flex items-center">
+        {title}
+        {required && (
+          <CgAsterisk
+            className="ml-1 text-red-500 w-2 h-2"
+            aria-hidden="true"
+          />
+        )}
+      </Label>
+      <Input
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className={error ? "border-red-500" : ""}
+      />
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   )
 );
-
 FormField.displayName = "FormField";
 
 const employeeCounts = [
@@ -103,11 +129,20 @@ const MemoizedSelectItem = memo(SelectItem);
 
 // Memoize expensive lists
 const MccSelect = memo(
-  ({ onValueChange }: { onValueChange: (value: string) => void }) => (
+  ({
+    onValueChange,
+    error,
+  }: {
+    onValueChange: (value: string) => void;
+    error?: string;
+  }) => (
     <div className="md:col-span-2">
-      <Label>MCC</Label>
+      <Label className="flex items-center">
+        MCC
+        <CgAsterisk className="ml-1 text-red-500 w-2 h-2" aria-hidden="true" />
+      </Label>
       <Select onValueChange={onValueChange}>
-        <SelectTrigger>
+        <SelectTrigger className={error ? "border-red-500" : ""}>
           <SelectValue placeholder="Select MCC" />
         </SelectTrigger>
         <SelectContent>
@@ -118,10 +153,10 @@ const MccSelect = memo(
           ))}
         </SelectContent>
       </Select>
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   )
 );
-
 MccSelect.displayName = "MccSelect";
 
 export default function CreateOrganizationPage() {
@@ -129,9 +164,13 @@ export default function CreateOrganizationPage() {
   const { handleChange, inputs, setValue, errors, setErrors } = useForm<
     Partial<CreateOrganization>
   >({});
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const utils = api.useUtils();
   const createOrg = api.organizations.create.useMutation();
+
+  // Function to check if a field is required
+  const isFieldRequired = (fieldName: string) =>
+    requiredFields.includes(fieldName);
 
   // Memoize form fields
   const basicInfoFields = useMemo(
@@ -147,6 +186,7 @@ export default function CreateOrganizationPage() {
             onChange={handleChange(name as keyof CreateOrganization)}
             value={inputs[name as keyof CreateOrganization] || ""}
             error={errors[name as keyof CreateOrganization]}
+            required={isFieldRequired(name)}
           />
         )),
     [inputs, handleChange, errors]
@@ -165,22 +205,55 @@ export default function CreateOrganizationPage() {
             value={inputs[name as keyof CreateOrganization] || ""}
             onChange={handleChange(name as keyof CreateOrganization)}
             error={errors[name as keyof CreateOrganization]}
+            required={isFieldRequired(name)}
           />
         )),
     [inputs, handleChange, errors]
   );
 
+  const validateForm = () => {
+    const validationResult = CreateOrganization.safeParse(inputs);
+
+    if (!validationResult.success) {
+      const fieldErrors = validationResult.error.formErrors.fieldErrors;
+
+      // Create custom user-friendly error messages for required fields
+      const enhancedErrors: Record<string, string> = {};
+
+      for (const field of requiredFields) {
+        if (!inputs[field as keyof CreateOrganization] && fieldErrors[field]) {
+          const fieldName =
+            baseFields.find((f) => f.name === field)?.title ||
+            formatLabel(field);
+          enhancedErrors[field] = `${fieldName} is required`;
+        }
+      }
+
+      // Merge with other validation errors
+      setErrors({
+        ...fieldErrors,
+        ...enhancedErrors,
+      });
+
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
-    const validate = CreateOrganization.safeParse(inputs);
-    if (!validate.success) {
-      setErrors(validate.error.formErrors.fieldErrors);
-      console.log("validation Failed::", validate.error.formErrors.fieldErrors);
-      return toast.error("Please fix the validation errors");
+    setIsSubmitting(true);
+
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      setIsSubmitting(false);
+      return;
     }
 
     try {
+      const validatedData = CreateOrganization.parse(inputs);
       const res = await createOrg.mutateAsync({
-        ...validate.data,
+        ...validatedData,
         userId: userId,
       });
 
@@ -188,34 +261,58 @@ export default function CreateOrganizationPage() {
         p.map((o) => (o.id === res.id ? { ...o, ...res } : o))
       );
 
-      console.log("Organization created successfully. Response:", res);
       toast.success("Organization created successfully");
-    } catch (error) {
-      toast.error("Failed to create organization");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create organization");
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold">Create Organization</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Create Organization</h2>
+        <div className="text-sm text-gray-500 flex items-center">
+          <CgAsterisk className="mr-1 text-red-500 w-2 h-2" />
+          <span>Required field</span>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {basicInfoFields}
-
-          <PhoneInput
-            onChange={(e) => setValue("phone", e)}
-            value={inputs.phone}
-            isError={!!errors.phone}
-          />
-
           <div>
-            <Label>Business Type</Label>
+            <Label className="flex items-center">
+              Phone Number
+              <CgAsterisk
+                className="ml-1 text-red-500 w-2 h-2"
+                aria-hidden="true"
+              />
+            </Label>
+            <PhoneInput
+              onChange={(e) => setValue("phone", e)}
+              value={inputs.phone}
+              isError={!!errors.phone}
+            />
+            {errors.phone && (
+              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+            )}
+          </div>
+          <div>
+            <Label className="flex items-center">
+              Business Type
+              <CgAsterisk
+                className="ml-1 text-red-500 w-2 h-2"
+                aria-hidden="true"
+              />
+            </Label>
             <Select onValueChange={(e) => setValue("type", e)}>
-              <SelectTrigger>
+              <SelectTrigger className={errors.type ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select business type" />
               </SelectTrigger>
               <SelectContent>
@@ -226,14 +323,28 @@ export default function CreateOrganizationPage() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.type && (
+              <p className="text-red-500 text-sm mt-1">{errors.type}</p>
+            )}
           </div>
 
-          <MccSelect onValueChange={(e) => setValue("mcc", e)} />
+          <MccSelect
+            onValueChange={(e) => setValue("mcc", e)}
+            error={errors.mcc}
+          />
 
           <div>
-            <Label>Default Currency</Label>
+            <Label className="flex items-center">
+              Default Currency
+              <CgAsterisk
+                className="ml-1 text-red-500 w-2 h-2"
+                aria-hidden="true"
+              />
+            </Label>
             <Select onValueChange={(e) => setValue("defaultCurrency", e)}>
-              <SelectTrigger>
+              <SelectTrigger
+                className={errors.defaultCurrency ? "border-red-500" : ""}
+              >
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
@@ -244,12 +355,25 @@ export default function CreateOrganizationPage() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.defaultCurrency && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.defaultCurrency}
+              </p>
+            )}
           </div>
 
           <div>
-            <Label>Country</Label>
+            <Label className="flex items-center">
+              Country
+              <CgAsterisk
+                className="ml-1 text-red-500 w-2 h-2"
+                aria-hidden="true"
+              />
+            </Label>
             <Select onValueChange={(e) => setValue("countryId", +e)}>
-              <SelectTrigger>
+              <SelectTrigger
+                className={errors.countryId ? "border-red-500" : ""}
+              >
                 <SelectValue placeholder="Select country" />
               </SelectTrigger>
               <SelectContent>
@@ -260,6 +384,9 @@ export default function CreateOrganizationPage() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.countryId && (
+              <p className="text-red-500 text-sm mt-1">{errors.countryId}</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -273,10 +400,16 @@ export default function CreateOrganizationPage() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} className="ml-auto w-fit">
-        <BiCheck className="mr-2" /> Save
-        <LoadingSpin loading={createOrg.isLoading} />
-      </Button>
+      <div className="flex justify-end mt-8">
+        <Button
+          onClick={handleSave}
+          className="w-fit"
+          disabled={isSubmitting || createOrg.isLoading}
+        >
+          <BiCheck className="mr-2" /> Save
+          <LoadingSpin loading={isSubmitting || createOrg.isLoading} />
+        </Button>
+      </div>
     </div>
   );
 }
