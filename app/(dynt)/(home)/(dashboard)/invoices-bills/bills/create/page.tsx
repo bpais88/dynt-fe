@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiOutlineBank } from "react-icons/ai";
 
-import BillDetails from "@/components/bills/BillDetails";
+import BillDetails, { CreateBillProps } from "@/components/bills/BillDetails";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,6 @@ import {
 
 import { useOrganization } from "@/context/OrganizationContext";
 import { Vendor } from "@/types";
-import { CreateBillProps } from "@/types/bills";
 import { api } from "@/utils/trpc";
 
 export default function CreateBillPage() {
@@ -81,11 +80,12 @@ export default function CreateBillPage() {
     terms,
   }: CreateBillProps) => {
     if (!selectedVendor) {
-      toast({
-        title: "Vendor Required",
-        description: "Please select a vendor before creating a bill",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Vendor Required",
+      //   description: "Please select a vendor before creating a bill",
+      //   variant: "destructive",
+      // });
+      console.log("Vendor not selected");
       setVendorListOpen(true);
       return;
     }
@@ -132,7 +132,7 @@ export default function CreateBillPage() {
       // });
       console.log("Bill created successfully");
 
-      router.push(`/bills/${bill.id}`);
+      router.push(`/invoices-bills/bills/${bill.id}`);
     } catch (error) {
       console.error("Error creating bill:", error);
       // toast({
@@ -352,8 +352,6 @@ export default function CreateBillPage() {
           <BillDetails
             handleCreate={handleCreate}
             isSubmitting={isSubmitting}
-            vendor={selectedVendor}
-            accountInfo={accountInfo}
           />
         </CardContent>
       </Card>

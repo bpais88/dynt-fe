@@ -16,7 +16,9 @@ import { useMemo, useState } from "react";
 
 // import { scanDocument } from "@/lib/api/utils";
 import { cn } from "@/lib/utils";
+import { uploadFile } from "@/utils/supabase";
 import { createId } from "@paralleldrive/cuid2";
+import { useMutation } from "@tanstack/react-query";
 import CurrencySelect from "./CurrencySelect";
 import DataRows from "./DataRows";
 import { FileUploader } from "./FileUploader";
@@ -167,6 +169,7 @@ const BillDetails = ({
 
     return { errors, formattedRows };
   };
+  const upload = useMutation(uploadFile);
 
   const handleSubmit = async () => {
     const { customId, dueDate, currency, terms } = formData;
@@ -187,9 +190,9 @@ const BillDetails = ({
       // Mock file upload - replace with your actual upload logic
       const uploadPromises = files.map(async (file) => {
         // Replace with your actual file upload implementation
-        const uploadedFile = await uploadFileMock(file);
+        const uploadedFileLink = await upload.mutateAsync(file);
         return {
-          link: uploadedFile.url,
+          link: uploadedFileLink,
           name: file.name,
           mimeType: file.type,
           size: formatFileSize(file.size),
@@ -210,19 +213,6 @@ const BillDetails = ({
       console.error("Error during submission:", error);
       //   toast.error("Something went wrong, please try again");
     }
-  };
-
-  // Mock function for file upload - replace with your actual implementation
-  const uploadFileMock = async (file: File) => {
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    return {
-      url: URL.createObjectURL(file),
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    };
   };
 
   const handleMagicUpload = async (file?: File) => {
