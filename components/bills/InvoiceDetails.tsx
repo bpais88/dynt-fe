@@ -22,7 +22,7 @@ import DataRows from "./DataRows";
 import { FileUploader } from "./FileUploader";
 
 // Types
-export type CreateBillRow = {
+export type CreateInvoiceRow = {
   amount: number;
   vat: number;
   description: string | null;
@@ -39,17 +39,18 @@ export type DataRowType = {
   confidence?: number;
 };
 
-export type CreateBillProps = {
-  rows: CreateBillRow[];
+export type CreateInvoiceProps = {
+  rows: CreateInvoiceRow[];
   customId?: string | null;
   dueDate: Date;
-  files: { name: string; mimeType: string; size: string; link: string }[];
   currency: string;
   terms: number | null;
+  paymentLinkEnabled: boolean;
+  files: { name: string; mimeType: string; size: string; link: string }[];
 };
 
-type BillDetailsProps = {
-  handleCreate: (arg: CreateBillProps) => Promise<void>;
+type InvoiceDetailsProps = {
+  handleCreate: (arg: CreateInvoiceProps) => Promise<void>;
   prevRows?: Record<string, DataRowType>;
   data?: {
     dueDate: Date;
@@ -93,7 +94,7 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-const BillDetails = ({
+const InvoiceDetails = ({
   handleCreate,
   prevRows = { [Date.now().toString()]: defaultRow },
   data = {
@@ -103,7 +104,7 @@ const BillDetails = ({
     terms: 30 as number | null,
   },
   isSubmitting = false,
-}: BillDetailsProps) => {
+}: InvoiceDetailsProps) => {
   const [rows, setRows] = useState<Record<string, DataRowType>>(prevRows);
   const [isOcrLoading, setIsOcrLoading] = useState(false);
   const [confidenceLevel, setConfidenceLevel] = useState<
@@ -134,10 +135,10 @@ const BillDetails = ({
     rowsArray: [string, DataRowType][]
   ): {
     errors: Record<string, string | undefined>;
-    formattedRows: CreateBillRow[];
+    formattedRows: CreateInvoiceRow[];
   } => {
     const errors: Record<string, string | undefined> = {};
-    const formattedRows: CreateBillRow[] = [];
+    const formattedRows: CreateInvoiceRow[] = [];
 
     rowsArray.forEach(([id, row]) => {
       const { amount, vat, description, quantity } = row;
@@ -170,7 +171,13 @@ const BillDetails = ({
   const upload = useMutation(uploadFile);
 
   const handleSubmit = async () => {
-    const { customId, dueDate, currency, terms } = formData;
+    const {
+      customId,
+      dueDate,
+      currency,
+      terms,
+      paymentLinkEnabled = false,
+    } = formData;
     const { errors: validationErrors, formattedRows } =
       formatDataRows(rowsArray);
 
@@ -203,9 +210,10 @@ const BillDetails = ({
         rows: formattedRows,
         customId: customId || null,
         dueDate,
-        files: uploadedFiles,
         currency,
         terms,
+        files: uploadedFiles,
+        paymentLinkEnabled,
       });
     } catch (error) {
       console.error("Error during submission:", error);
@@ -283,7 +291,7 @@ const BillDetails = ({
       {/* Top Section - Magic Upload & Currency Selection */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Choose Bill details or</span>
+          <span className="text-sm font-medium">Choose Invoice details or</span>
           <div className="relative">
             <Button
               variant="outline"
@@ -428,7 +436,7 @@ const BillDetails = ({
 
       {/* File Upload */}
       <div className="space-y-2">
-        <Label>Upload Bill</Label>
+        <Label>Upload Invoice</Label>
         <FileUploader files={files} setFiles={setFiles} />
       </div>
 
@@ -462,4 +470,4 @@ const BillDetails = ({
   );
 };
 
-export default BillDetails;
+export default InvoiceDetails;

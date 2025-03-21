@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiOutlineBank } from "react-icons/ai";
 
-import BillDetails, { CreateBillProps } from "@/components/bills/BillDetails";
+import InvoiceDetails, {
+  CreateInvoiceProps,
+} from "@/components/bills/InvoiceDetails";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,40 +23,43 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { addDays } from "date-fns";
 
 import { useOrganization } from "@/context/OrganizationContext";
+import { useUser } from "@/context/UserContext";
 import { api, RouterOutputs } from "@/utils/trpc";
 
-type Vendor = RouterOutputs["partners"]["vendorsByOrgId"][number];
+type Customer = RouterOutputs["partners"]["customersByOrgId"][number];
 
-export default function CreateBillPage() {
+export default function CreateInvoicePage() {
   const router = useRouter();
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [accountInfo, setAccountInfo] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [vendorListOpen, setVendorListOpen] = useState(true);
+  const [customerListOpen, setCustomerListOpen] = useState(true);
   const [accountListOpen, setAccountListOpen] = useState(false);
+  const { userId } = useUser();
 
   const { organizationId = "" } = useOrganization();
-  const create = api.bills.createBill.useMutation();
+  const create = api.invoices.createInvoice.useMutation();
 
-  // Fetch vendors
-  const { data: vendors = [], isLoading: isVendorsLoading } =
-    api.partners.vendorsByOrgId.useQuery(organizationId, {
+  // Fetch customers
+  const { data: customers = [], isLoading: isCustomersLoading } =
+    api.partners.customersByOrgId.useQuery(organizationId, {
       enabled: !!organizationId,
     });
 
-  // Fetch vendor bank accounts when a vendor is selected
-  const { data: vendorAccounts = [], isLoading: isVendorBankAccountLoading } =
-    api.manualAccounts.vendorAccounts.useQuery(selectedVendor?.id || "", {
-      enabled: !!selectedVendor?.id,
-    });
+  // Fetch  bank accounts
+  const { data: bankAccounts = [], isLoading: isBankAccountsLoading } =
+    api.account.list.useQuery(organizationId);
 
-  const handleVendorSelect = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
-    setVendorListOpen(false);
+  const handleCustomerSelect = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setCustomerListOpen(false);
     setAccountListOpen(true);
-    setAccountInfo(null); // Reset account selection when vendor changes
+    setAccountInfo(null); // Reset account selection when customer changes
   };
 
   const handleAccountSelect = (account: any) => {
@@ -68,19 +73,20 @@ export default function CreateBillPage() {
   const handleCreate = async ({
     rows,
     customId,
-    dueDate,
+    dueDate = addDays(new Date(), 30),
     currency,
-    files,
     terms,
-  }: CreateBillProps) => {
-    if (!selectedVendor) {
+    paymentLinkEnabled,
+    files,
+  }: CreateInvoiceProps) => {
+    if (!selectedCustomer) {
       // toast({
-      //   title: "Vendor Required",
-      //   description: "Please select a vendor before creating a bill",
+      //   title: "Customer Required",
+      //   description: "Please select a customer before creating a bill",
       //   variant: "destructive",
       // });
-      console.log("Vendor not selected");
-      setVendorListOpen(true);
+      console.log("Customer not selected");
+      setCustomerListOpen(true);
       return;
     }
 
@@ -105,19 +111,21 @@ export default function CreateBillPage() {
         return;
       }
 
-      const bill = await create.mutateAsync({
-        vendorId: selectedVendor.id,
+      const invoice = await create.mutateAsync({
+        customerId: selectedCustomer.id,
         rows,
+        accountInfo,
         dueDate,
         terms,
         total: totalAmount + totalVat,
         totalAmount,
-        files,
         totalVat,
         customId,
         currency,
-        accountInfo,
         organizationId,
+        paymentLinkEnabled,
+        userId,
+        files,
       });
 
       // toast({
@@ -126,21 +134,21 @@ export default function CreateBillPage() {
       // });
       console.log("Bill created successfully");
 
-      router.push(`/invoices-bills/bills/${bill.id}`);
+      router.push(`/invoices-bills/invoices/${invoice.id}`);
     } catch (error) {
-      console.error("Error creating bill:", error);
+      console.error("Error creating invoice:", error);
       // toast({
       //   title: "Error",
       //   description: "Failed to create bill. Please try again.",
       //   variant: "destructive",
       // });
-      console.log("Failed to create bill. Please try again.");
+      console.log("Failed to create invoice. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getVendorInitials = (name: string) => {
+  const getCustomerInitials = (name: string) => {
     return name
       .split(" ")
       .map((part) => part[0])
@@ -160,12 +168,12 @@ export default function CreateBillPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Create Bill</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
 
-      {/* Vendor selection section */}
+      {/* Customer selection section */}
       <Collapsible
-        open={vendorListOpen}
-        onOpenChange={setVendorListOpen}
+        open={customerListOpen}
+        onOpenChange={setCustomerListOpen}
         className="w-full"
       >
         <Card className="shadow-sm py-2">
@@ -175,18 +183,18 @@ export default function CreateBillPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">
-                    {!selectedVendor
-                      ? "Choose a Vendor"
-                      : `Vendor: ${selectedVendor.name}`}
+                    {!selectedCustomer
+                      ? "Choose a Customer"
+                      : `Customer: ${selectedCustomer.name}`}
                   </CardTitle>
-                  {selectedVendor && (
+                  {selectedCustomer && (
                     <CardDescription className="text-sm mt-1">
-                      {selectedVendor.email || "No email"} |{" "}
-                      {selectedVendor.phone || "No phone"}
+                      {selectedCustomer.email || "No email"} |{" "}
+                      {selectedCustomer.phone || "No phone"}
                     </CardDescription>
                   )}
                 </div>
-                {vendorListOpen ? (
+                {customerListOpen ? (
                   <ChevronUp className="h-4 w-4 text-slate-500" />
                 ) : (
                   <ChevronDown className="h-4 w-4 text-slate-500" />
@@ -197,53 +205,55 @@ export default function CreateBillPage() {
 
           <CollapsibleContent className=" my-0">
             <CardContent className="py-2 px-3">
-              {isVendorsLoading ? (
+              {isCustomersLoading ? (
                 <div className="flex justify-center py-3">
-                  <p>Loading vendors...</p>
+                  <p>Loading customers...</p>
                 </div>
-              ) : vendors.length === 0 ? (
+              ) : customers.length === 0 ? (
                 <div className="flex flex-col items-center py-4 text-center">
                   <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p>No vendors found. Please add a vendor first.</p>
+                  <p>No customers found. Please add a customer first.</p>
                 </div>
               ) : (
                 <div className="grid gap-2 max-h-60 overflow-y-auto p-1">
-                  {vendors.map((vendor) => (
+                  {customers.map((customer) => (
                     <Button
-                      key={vendor.id}
+                      key={customer.id}
                       variant={
-                        selectedVendor?.id === vendor.id ? "subtle" : "ghost"
+                        selectedCustomer?.id === customer.id
+                          ? "subtle"
+                          : "ghost"
                       }
                       className={`justify-start py-2 px-3 h-auto w-full ${
-                        selectedVendor?.id === vendor.id
+                        selectedCustomer?.id === customer.id
                           ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
                           : "hover:bg-slate-50"
                       }`}
-                      onClick={() => handleVendorSelect(vendor)}
+                      onClick={() => handleCustomerSelect(customer)}
                     >
                       <div className="flex items-center gap-3 w-full">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={vendor.photo || ""}
-                            alt={vendor.name}
+                            src={customer.photo || ""}
+                            alt={customer.name}
                           />
                           <AvatarFallback className="bg-slate-200 text-slate-600 text-xs">
-                            {getVendorInitials(vendor.name)}
+                            {getCustomerInitials(customer.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 text-left">
-                          <p className="font-medium text-sm">{vendor.name}</p>
+                          <p className="font-medium text-sm">{customer.name}</p>
                           <p className="text-xs text-slate-500 truncate">
-                            {vendor.email || "No email"} |{" "}
-                            {vendor.city || "No location"}
+                            {customer.email || "No email"} |{" "}
+                            {customer.city || "No location"}
                           </p>
                         </div>
-                        {vendor.business_tax_number && (
+                        {customer.business_tax_number && (
                           <Badge
                             variant="outline"
                             className="ml-auto text-xs bg-transparent"
                           >
-                            VAT: {vendor.business_tax_number}
+                            VAT: {customer.business_tax_number}
                           </Badge>
                         )}
                       </div>
@@ -257,14 +267,14 @@ export default function CreateBillPage() {
       </Collapsible>
 
       {/* Bank account selection section */}
-      {selectedVendor && (
+      {selectedCustomer && (
         <Collapsible
           open={accountListOpen}
           onOpenChange={setAccountListOpen}
           className="w-full"
         >
           <Card className=" py-2 shadow-sm">
-            {/* Make the entire header clickable, matching the vendor section */}
+            {/* Make the entire header clickable, matching the customer section */}
             <CollapsibleTrigger asChild>
               <CardHeader className="py-2 cursor-pointer hover:bg-slate-50 rounded-t-md transition-colors">
                 <div className="flex items-center justify-between">
@@ -294,18 +304,18 @@ export default function CreateBillPage() {
 
             <CollapsibleContent className="py-0">
               <CardContent className="py-2 px-3">
-                {isVendorBankAccountLoading ? (
+                {isBankAccountsLoading ? (
                   <div className="flex justify-center py-3">
                     <p>Loading bank accounts...</p>
                   </div>
-                ) : vendorAccounts.length === 0 ? (
+                ) : bankAccounts.length === 0 ? (
                   <div className="flex flex-col items-center py-4 text-center">
                     <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p>No bank accounts found for this vendor.</p>
+                    <p>No bank accounts found for this customer.</p>
                   </div>
                 ) : (
                   <div className="grid gap-2 max-h-48 overflow-y-auto p-1">
-                    {vendorAccounts.map((account) => (
+                    {bankAccounts.map((account) => (
                       <Button
                         key={account.id}
                         variant="ghost"
@@ -366,10 +376,10 @@ export default function CreateBillPage() {
       {/* Bill details section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Bill Details</CardTitle>
+          <CardTitle className="text-lg">Invoice Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <BillDetails
+          <InvoiceDetails
             handleCreate={handleCreate}
             isSubmitting={isSubmitting}
           />

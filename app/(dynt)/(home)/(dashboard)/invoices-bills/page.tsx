@@ -54,14 +54,14 @@ export default function InvoicesBillsPage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Invoices & Bills</h2>
           <div className="flex gap-3">
-            {/* <Button
+            <Button
               onClick={handleCreateInvoice}
               variant="outline"
               className="flex items-center gap-1 cursor-pointer border-black text-black hover:bg-gray-50"
             >
               <PlusIcon size={14} />
               Create New Invoice
-            </Button> */}
+            </Button>
             <Button
               onClick={handleCreateBill}
               variant="outline"
